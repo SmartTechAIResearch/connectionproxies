@@ -48,7 +48,7 @@
     vApus is Copyrighted by Sizing Servers Lab
     University College of West-Flanders, Department GKG
 	
-	VERSION STABLE-@TM
+	VERSION @BRANCH-@TM
 */
 
 // The following line is used to add references when compiling, you can edit this here or in the references tab page. Please use the 'Browse...' button for dlls that are not in the GAC.
