@@ -15,15 +15,22 @@
                   <UsePasswordChar>False</UsePasswordChar>
                   <Description>
                   </Description>
-                  <Label>
-                  </Label>
+                  <Label>http://</Label>
                   <ShowInGui>True</ShowInGui>
                   <IsDefaultItem>False</IsDefaultItem>
                   <IsEmpty>False</IsEmpty>
                 </Rule>
               </Items>
               <Description>Must start with 'http://' and may not end with /.</Description>
-              <Label>URL</Label>
+              <Label>Uri</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items />
+              <Description>Examples: application/x-www-form-urlencoded; application/x-amf</Description>
+              <Label>Content Type</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
               <IsEmpty>False</IsEmpty>
@@ -31,8 +38,7 @@
           </Items>
           <Connected>False</Connected>
           <TracertField>1</TracertField>
-          <ChildDelimiter>
-          </ChildDelimiter>
+          <ChildDelimiter>;</ChildDelimiter>
           <Description>
           </Description>
           <ShowInGui>True</ShowInGui>
@@ -48,11 +54,11 @@
     
     Note: If you want to edit this connection proxy code you need to know what you are doing. You might break your stresstest.
 	
-	VERSION NIGHTLY-@TM
+	VERSION @BRANCH@-@TM@
 */
 
 // The following line is used to add references when compiling, you can edit this here or in the references tab page. Please use the 'Browse...' button for dlls that are not in the GAC.
-// dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;AMF2_fat.dll;ICSharpCode.SharpZipLib.dll;IKVM.AWT.WinForms.dll;IKVM.OpenJDK.Beans.dll;IKVM.OpenJDK.Charsets.dll;IKVM.OpenJDK.Corba.dll;IKVM.OpenJDK.Core.dll;IKVM.OpenJDK.Jdbc.dll;IKVM.OpenJDK.Management.dll;IKVM.OpenJDK.Media.dll;IKVM.OpenJDK.Misc.dll;IKVM.OpenJDK.Naming.dll;IKVM.OpenJDK.Remoting.dll;IKVM.OpenJDK.Security.dll;IKVM.OpenJDK.Text.dll;IKVM.OpenJDK.Tools.dll;IKVM.OpenJDK.Util.dll;IKVM.OpenJDK.XML.API.dll;IKVM.OpenJDK.XML.Bind.dll;IKVM.OpenJDK.XML.Crypto.dll;IKVM.OpenJDK.XML.Parse.dll;IKVM.OpenJDK.XML.Transform.dll;IKVM.OpenJDK.XML.WebServices.dll;IKVM.OpenJDK.XML.XPath.dll;IKVM.Reflection.dll;IKVM.Runtime.dll;IKVM.Runtime.JNI.dll;System.Web.dll;System.Windows.Forms.dll;vApus.SolutionTree.dll;
+// dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;System.Web.dll;
 
 #region Preprocessors
     //
@@ -76,9 +82,7 @@
     //
     using System.IO;
     using System.Net;
-    using System.Windows.Forms;
-    using System.IO.Compression;
-    using be.sizingservers.amf;
+    using System.Collections.Generic;
 #endregion // Usings
 
 namespace vApus.Stresstest {
@@ -89,7 +93,8 @@ namespace vApus.Stresstest {
             bool _isDisposed;
             // Please do not edit the following lines (RuleSetFields).
             // -- RuleSetFields --
-            System.String _connectionProxySyntaxItem0 = string.Empty; // URL
+            System.String _connectionProxySyntaxItem0 = string.Empty; // Uri
+            System.String _connectionProxySyntaxItem1 = string.Empty; // Content Type
             // -- RuleSetFields --
             
             //
@@ -98,9 +103,9 @@ namespace vApus.Stresstest {
             StringTree _parameterizedLogEntry;
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
-            CookieCollection _cookieCollection;
+            CookieCollection _cookies;
             StreamReader _streamReader;
-            const int _relativeUrl = 0, _requestMethod = 1, _getData = 2, _postData = 3, _cookies = 4, _userAgent = 5, _contentType = 6, _sourceIP = 7, _destinationIP = 8, _destinationHost = 9, _beginTimestamp = 10, _endTimestamp = 11;
+            const int _bytes = 1;
         #endregion // Fields
         
         #region Properties
@@ -123,10 +128,11 @@ namespace vApus.Stresstest {
         #region Functions
             public void TestConnection(out string error) {
                 error = null;
+                
                 try {
                     _httpWebRequest= (HttpWebRequest)System.Net.WebRequest.Create(new Uri(_connectionProxySyntaxItem0));
-                    _httpWebRequest.UserAgent = "vApus v2 - Test connection function";
-                    _httpWebRequest.Timeout = 60000;
+                    _httpWebRequest.UserAgent = "vApus v2 - " + GetHashCode();
+                    _httpWebRequest.Timeout = 3600000;
                     _httpWebRequest.AllowAutoRedirect = false;
                     _httpWebRequest.ServicePoint.Expect100Continue = false;
                     
@@ -134,25 +140,20 @@ namespace vApus.Stresstest {
                     
                     _httpWebRequest.Method = "GET";
                     _httpWebRequest.ContentLength = 0;
+                    
                     _httpWebRequest.ContentType = "application/x-www-form-urlencoded";
                     
-                    _cookieCollection= new CookieCollection();
+                    _cookies = new CookieCollection();
                     
                     HandleCookiesBeforeRequest();
                     _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
                     
-                    
                     if (_httpWebResponse.StatusCode == HttpStatusCode.NotFound) {
-                        throw new Exception("Page not found!");
+                        error = "Could not open the connection. (Status code: " + _httpWebResponse.StatusCode + ")";
                     }
                     
-                    if (_httpWebResponse.ContentEncoding.ToLower().Contains("gzip")) {
-                        _streamReader = new StreamReader(new GZipStream(_httpWebResponse.GetResponseStream(), CompressionMode.Decompress));
-                    }
-                    else {
-                        _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), (_httpWebResponse.ContentEncoding.Length &gt; 0) ?
-                        System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
-                    }
+                    _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), (_httpWebResponse.ContentEncoding.Length &gt; 0) ?
+                    System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
                     
                     HandleCookiesAfterRequest();
                 }
@@ -160,7 +161,7 @@ namespace vApus.Stresstest {
                     error = ex.ToString();
                 }
                 finally {
-                    _cookieCollection= null;
+                    _cookies = null;
                     if (_streamReader != null) {
                         try {
                             _streamReader.Close();
@@ -196,7 +197,7 @@ namespace vApus.Stresstest {
                 //
                 // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
                 // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
-                // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together. 
+                // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
                 
                 //
@@ -209,53 +210,67 @@ namespace vApus.Stresstest {
                     timeToLastByte = new TimeSpan();
                     return;
                 }
+                
                 try {
                     sentAt = DateTime.Now;
                     _stopwatch.Start();
+                    Stream stream = null;
                     try {
                         //
                         // Send the request to the server here.
                         //
                         
-                        InitHttpWebRequest();
-                        //InitCookies();
-                        //HandleCookiesBeforeRequest();
-                        ApplyPostData();
+                        string logEntry = _parameterizedLogEntry[_bytes].Value;
+                        
+                        // A parameterizing solution.
+                        // string find = "foo";
+                        // int index = logEntry.IndexOf(find);
+                        
+                        byte[] bytes = ParseLogEntryToBytes(logEntry);
+                        
+                        // bytes = RemoveAt(bytes, index, find.Length);
+                        // bytes = InsertAt(bytes, index, "bar");
+                        
+                        // or
+                        
+                        // var clp = ASTNode.CustomListParameters[0] as CustomListParameter;
+                        // clp.Next();
+                        // bytes = InsertAt(bytes, index, clp.Value);
+                        
+                        InitHttpWebRequest(bytes.Length);
+                        HandleCookiesBeforeRequest();
+                        stream = _httpWebRequest.GetRequestStream();
+                        
+                        stream.Write(bytes, 0, bytes.Length);
+                        stream.Flush();
+                        stream.Close();
+                        stream.Dispose();
+                        stream = null;
+                        
                         _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
+                        stream = _httpWebResponse.GetResponseStream();
+                        stream.Close();
+                        stream.Dispose();
+                        stream = null;
                         
-                        if (_httpWebResponse.StatusCode == HttpStatusCode.NotFound) {
-                            throw new Exception("Page not found!");
-                        }
-                        
-                        if (_httpWebResponse.ContentEncoding.ToLower().Contains("gzip")) {
-                            _streamReader = new StreamReader(new GZipStream(_httpWebResponse.GetResponseStream(), CompressionMode.Decompress));
-                        }
-                        else {
-                            _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), (_httpWebResponse.ContentEncoding.Length &gt; 0) ?
-                            System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
-                        }
-                        
-                        //HandleCookiesAfterRequest();
-                        
-                        //WritePage(_streamReader.ReadToEnd(), string.Concat_parameterizedLogEntry[_relativeUrl].Value.Replace("/", "_"), ".htm"));
+                        HandleCookiesAfterRequest();
                     }
                     catch (Exception ex) {
                         exception = ex;
+                        if(stream != null) {
+                            try {
+                                stream.Close();
+                                stream.Dispose();
+                            }
+                            finally {
+                                stream = null;
+                            }
+                        }
                     }
                     finally {
                         //
                         // Close stuff if needed.
                         //
-                        
-                        if (_streamReader != null) {
-                            try {
-                                _streamReader.Close();
-                                _streamReader.Dispose();
-                            }
-                            finally {
-                                _streamReader = null;
-                            }
-                        }
                     }
                 }
                 catch {
@@ -278,85 +293,74 @@ namespace vApus.Stresstest {
                     _isDisposed = true;
                     _httpWebRequest = null;
                     _httpWebResponse = null;
-                    _cookieCollection= null;
-                    if (_streamReader != null) {
-                        try {
-                            _streamReader.Close();
-                            _streamReader.Dispose();
-                            _streamReader = null;
-                        }
-                        catch {
-                        }
-                    }
+                    _cookies = null;
                 }
             }
         #endregion // Functions
         
         #region Free Coding
-            private void InitHttpWebRequest() {
-                if(_parameterizedLogEntry[_getData].Count != 0) {
-                    _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}{1}?{2}",
-                    _connectionProxySyntaxItem0, _parameterizedLogEntry[_relativeUrl].Value,
-                    _parameterizedLogEntry[_getData].CombineValues())));
-                }
-                else {
-                    _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}{1}",
-                    _connectionProxySyntaxItem0, _parameterizedLogEntry[_relativeUrl].Value)));
+            private byte[] ParseLogEntryToBytes(string s) {
+                string[] array = s.Split(',');
+                byte[] bytes = new byte[array.Length];
+                
+                for (int i = 0; i &lt; array.Length; i++) {
+                    bytes[i] = (byte)int.Parse(array[i]);
                 }
                 
-                _httpWebRequest.UserAgent = _parameterizedLogEntry[_userAgent].Value;
+                return bytes;
+            }
+            
+            // Following two fx's can be used for a parameterizing solution in the connection proxy code.
+            private byte[] RemoveAt(byte[] source, int index, int count) {
+                var newB = new List&lt;Byte&gt;(index + 1);
+                int exclusiveLastIndex = index + count;
+                for (int i = 0; i &lt; source.Length; i++) {
+                    if (i &lt; index || i &gt; exclusiveLastIndex) {
+                        newB.Add(source[i]);
+                    }
+                }
+                return newB.ToArray();
+            }
+            
+            // Replaces the bytes at the given index with the bytes of s.
+            private byte[] InsertAt(byte[] source, int index, string s) {
+                byte[] toInsert = System.Text.Encoding.Default.GetBytes(s);
+                var newB = new List&lt;Byte&gt;(source.Length + toInsert.Length);
+                for (int i = 0; i &lt; index; i++) {
+                    if (i &gt;= source.Length) {
+                        break;
+                    }
+                    newB.Add(source[i]);
+                }
+                newB.AddRange(toInsert);
+                for (int i = index; i &lt; source.Length; i++) {
+                    newB.Add(source[i]);
+                }
+                return newB.ToArray();
+            }
+            
+            private void InitHttpWebRequest(int contentLength) {
+                _httpWebRequest = HttpWebRequest.Create(_connectionProxySyntaxItem0) as HttpWebRequest;
+                _httpWebRequest.UserAgent = "vApus v2 - " + GetHashCode();
                 _httpWebRequest.Timeout = 60000;
                 _httpWebRequest.AllowAutoRedirect = false;
                 _httpWebRequest.ServicePoint.Expect100Continue = false;
                 
-                _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
+                _httpWebRequest.ServicePoint.ConnectionLimit =  (this.GetParent() as ConnectionProxyPool).PoolSize;
                 
-                _httpWebRequest.Method = _parameterizedLogEntry[_requestMethod].Value;
-                _httpWebRequest.ContentLength = 0;
+                _httpWebRequest.Method = "POST";
+                _httpWebRequest.ContentLength = contentLength;
                 
-                _httpWebRequest.ContentType = String.IsNullOrEmpty(_parameterizedLogEntry[_contentType].Value) ? "application/x-www-form-urlencoded" : _parameterizedLogEntry[_contentType].Value;
-            }
-            
-            private void InitCookies() {
-                if (_cookieCollection== null) {
-                    _cookieCollection= new CookieCollection();
-                }
-                
-                foreach (var kvp in _parameterizedLogEntry[_cookies]) {
-                    string key = kvp[0].Value.TrimStart();
-                    string value = ((kvp.Count == 1) ? string.Empty : kvp[1].Value);
-                    
-                    int cookieIndex = GetCookieIndex(key);
-                    if (cookieIndex == -1) {
-                        Cookie cookie = new Cookie(key, value);
-                        
-                        // Trim http://
-                        cookie.Domain = _connectionProxySyntaxItem0.Substring(7);
-                        _cookieCollection.Add(cookie);
-                    }
-                }
-            }
-            
-            private void ApplyPostData() {
-                if (_parameterizedLogEntry[_postData].Value.Length != 0) {
-                    string postData = _parameterizedLogEntry[_postData].Value;
-                    
-                    byte[] bytes = AMFUtil.serializeAMFfromXML(postData);
-                    
-                    _httpWebRequest.ContentLength = bytes.Length;
-                    Stream postStream = _httpWebRequest.GetRequestStream();
-                    postStream.Write(bytes, 0, bytes.Length);
-                    
-                    postStream.Flush();
-                    postStream.Close();
-                    postStream.Dispose();
-                    postStream = null;
-                }
+                // Default: "application/x-www-form-urlencoded"
+                _httpWebRequest.ContentType = _connectionProxySyntaxItem1;
             }
             
             private void HandleCookiesBeforeRequest() {
+                if (_cookies == null) {
+                    _cookies = new CookieCollection();
+                }
                 _httpWebRequest.CookieContainer = new CookieContainer();
-                _httpWebRequest.CookieContainer.Add(_cookieCollection);
+                _httpWebRequest.CookieContainer.Add(_cookies);
             }
             
             private void HandleCookiesAfterRequest() {
@@ -364,10 +368,10 @@ namespace vApus.Stresstest {
                     foreach (Cookie cookie in _httpWebRequest.CookieContainer.GetCookies(_httpWebRequest.RequestUri)) {
                         int cookieIndex = GetCookieIndex(cookie.Name);
                         if (cookieIndex == -1) {
-                            _cookieCollection.Add(cookie);
+                            _cookies.Add(cookie);
                         }
                         else {
-                            _cookieCollection[cookieIndex].Value = cookie.Value;
+                            _cookies[cookieIndex].Value = cookie.Value;
                         }
                     }
                 }
@@ -375,38 +379,23 @@ namespace vApus.Stresstest {
                     foreach (Cookie cookie in _httpWebResponse.Cookies) {
                         int cookieIndex = GetCookieIndex(cookie.Name);
                         if (cookieIndex == -1) {
-                            _cookieCollection.Add(cookie);
+                            _cookies.Add(cookie);
                         }
                         else {
-                            _cookieCollection[cookieIndex].Value = cookie.Value;
+                            _cookies[cookieIndex].Value = cookie.Value;
                         }
                     }
+                    
                 }
             }
             
             private int GetCookieIndex(string cookieName) {
-                for (int i = 0; i &lt; _cookieCollection.Count; i++) {
-                    if (_cookieCollection[i].Name == cookieName) {
+                for (int i = 0; i &lt; _cookies.Count; i++) {
+                    if (_cookies[i].Name == cookieName) {
                         return i;
                     }
                 }
                 return -1;
-            }
-            
-            // For testing purposes only.
-            private void WritePage(string source, string pageName) {
-                string testedUrlsPath = Path.Combine(Application.StartupPath, "testedUrls");
-                if (!Directory.Exists(testedUrlsPath)) {
-                    Directory.CreateDirectory(testedUrlsPath);
-                }
-                string path = Path.Combine(testedUrlsPath, pageName);
-                StreamWriter sw = new StreamWriter(path);
-                sw.Write(source);
-                sw.Flush();
-                sw.Close();
-                sw.Dispose();
-                sw = null;
-                Process.Start(path);
             }
         #endregion // Free Coding
     } // ConnectionProxy
@@ -416,7 +405,7 @@ namespace vApus.Stresstest {
           <IsEmpty>False</IsEmpty>
         </ConnectionProxyCode>
       </Items>
-      <Label>HTTP AMF</Label>
+      <Label>HTTP Binary POST @BRANCH@-@TM@</Label>
       <ShowInGui>True</ShowInGui>
       <IsDefaultItem>False</IsDefaultItem>
       <IsEmpty>False</IsEmpty>
