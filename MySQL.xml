@@ -122,7 +122,7 @@
     vApus is Copyrighted by Sizing Servers Lab
     University College of West-Flanders, Department GKG
 	
-	VERSION @BRANCH-@TM
+	VERSION @BRANCH@-@TM@
 */
 
 // dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;MySql.Data.dll;System.XML.dll;
@@ -136,18 +136,15 @@
     // do stuff...
     // #endif
 #endregion //Preprocessors
-
 #region Default Usings
     using System;
     using System.Data;
     using System.Diagnostics;
     using vApus.Util;
 #endregion //Default Usings
-
 #region Custom Usings
     using MySql.Data.MySqlClient;
 #endregion //Custom Usings
-
 namespace vApus.Stresstest {
     public class ConnectionProxy : IConnectionProxy {
         #region Default Fields
@@ -288,7 +285,7 @@ namespace vApus.Stresstest {
           <IsEmpty>False</IsEmpty>
         </ConnectionProxyCode>
       </Items>
-      <Label>MySQL</Label>
+      <Label>MySQL @BRANCH@-@TM@</Label>
       <ShowInGui>True</ShowInGui>
       <IsDefaultItem>False</IsDefaultItem>
       <IsEmpty>False</IsEmpty>

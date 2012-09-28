@@ -48,7 +48,7 @@
     vApus is Copyrighted by Sizing Servers Lab
     University College of West-Flanders, Department GKG
 	
-	VERSION @BRANCH-@TM
+	VERSION @BRANCH@-@TM@
 */
 
 // dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;System.Web.dll;
@@ -544,7 +544,7 @@ namespace vApus.Stresstest {
           <IsEmpty>False</IsEmpty>
         </ConnectionProxyCode>
       </Items>
-      <Label>HTTP</Label>
+      <Label>HTTP @BRANCH@-@TM@</Label>
       <ShowInGui>True</ShowInGui>
       <IsDefaultItem>False</IsDefaultItem>
       <IsEmpty>False</IsEmpty>
