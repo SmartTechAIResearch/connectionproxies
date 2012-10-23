@@ -47,12 +47,12 @@
     University College of West-Flanders, Department GKG
     
     Note: If you want to edit this connection proxy code you need to know what you are doing. You might break your stresstest.
-	
-	VERSION @BRANCH@-@TM@
+    	
+    	VERSION @BRANCH@-@TM@
 */
 
 // The following line is used to add references when compiling, you can edit this here or in the references tab page. Please use the 'Browse...' button for dlls that are not in the GAC.
-// dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;System.Web.dll;
+// dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;System.Web.dll;System.Windows.Forms.dll;System.Core.dll;
 
 #region Preprocessors
     //
@@ -66,6 +66,13 @@
     // Use this preprocessor if you want to use the logged cookies. This will discard any cookies set by the server during
     // the test and only use those that are specified in the Log.
     //#define USELOGGEDCOOKIES
+    
+    // This preprocessor disabes .NET's own cookieparser and uses our own implementation instead. This should only be used when
+    // the cookiedomain is different than the used Connection, when cookies from another domain are discarded. For example a
+    // website sets its cookiedomain to ".cooldomain.com" but for testing we use a plain IP as Connection. In this case .NET
+    // would discard our cookies, which could break our test. Using this preprocessor rewrites the Connection Proxy to use a
+    // custom parser that works around this security feature.
+    //#define USECUSTOMCOOKIEPARSER
     
     // When used, the Connection set in vApus will be ignored for the stresstest. The logged "Destination Host" is used instead.
     // This is sometimes necessary if for example authentication is redirected to a secondary server or if cookie-free
@@ -98,6 +105,9 @@
     using System.Net;
     using System.IO.Compression;
     using System.Web;
+    using System.Windows.Forms;
+    using System.Linq;
+    using System.Collections.Generic;
 #endregion // Usings
 
 namespace vApus.Stresstest {
@@ -118,6 +128,7 @@ namespace vApus.Stresstest {
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
             CookieCollection _cookieCollection;
+            CookieDecoder _cookieDecoder;
             StreamReader _streamReader;
             const int _relativeUrl = 0, _requestMethod = 1, _getData = 2, _postData = 3, _cookies = 4, _userAgent = 5, _contentType = 6, _sourceIP = 7, _destinationIP = 8, _destinationHost = 9, _beginTimestamp = 10, _endTimestamp = 11;
             string _viewstate = string.Empty, _eventvalidation = string.Empty;
@@ -136,7 +147,7 @@ namespace vApus.Stresstest {
             
             // Example of a custom sting you need extracted and inserted in GET and/or POST data (usually an ID of some sort).
             // Throughout this connection proxy are blocks of example code commented for this specific usage.
-            //string _some_var = string.Empty;
+            //string _sid = string.Empty;
         #endregion // Fields
         
         #region Properties
@@ -175,9 +186,6 @@ namespace vApus.Stresstest {
                     _httpWebRequest.ContentLength = 0;
                     _httpWebRequest.ContentType = "application/x-www-form-urlencoded";
                     
-                    _cookieCollection= new CookieCollection();
-                    
-                    HandleCookiesBeforeRequest();
                     _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
                     
                     
@@ -192,8 +200,6 @@ namespace vApus.Stresstest {
                         _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), (_httpWebResponse.ContentEncoding.Length != 0) ?
                         System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
                     }
-                    
-                    HandleCookiesAfterRequest();
                 }
                 catch (Exception ex) {
                     error = ex.ToString();
@@ -299,13 +305,15 @@ namespace vApus.Stresstest {
                         }
                         #endif
                         
-                        //if (_parameterizedLogEntry[_relativeUrl].Value == "/SomePage") {
-                            //    var query = HttpUtility.ParseQueryString(_httpWebResponse.GetResponseHeader("Location"));
-                            //    _some_var = query["something"];
+                        //if (_parameterizedLogEntry[_relativeUrl].Value == "/index.php" || _parameterizedLogEntry[_relativeUrl].Value == "/ucp.php") {
+                            //var query = HttpUtility.ParseQueryString(_httpWebResponse.GetResponseHeader("Location"));
+                            //_some_var = query["some_query"];
+                            //_sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
                         //}
                     }
                     catch (Exception ex) {
                         exception = ex;
+                        MessageBox.Show(exception.ToString());
                     }
                     finally {
                         //
@@ -344,6 +352,7 @@ namespace vApus.Stresstest {
                     _httpWebRequest = null;
                     _httpWebResponse = null;
                     _cookieCollection= null;
+                    _cookieDecoder = null;
                     if (_streamReader != null) {
                         try {
                             _streamReader.Close();
@@ -362,8 +371,8 @@ namespace vApus.Stresstest {
                 #if USEMULTICONNECTION
                 if (_parameterizedLogEntry[_getData].Count != 0) {
                     string getData = _parameterizedLogEntry[_getData].CombineValues();
-                    //if(_some_var != string.Empty) {
-                        //    getData = getData.Replace("@replaceSomething", _some_var);
+                    //if(_sid != string.Empty) {
+                        //    getData = getData.Replace("@replaceSID", _sid);
                     //}
                     
                     _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("http://{0}{1}?{2}",
@@ -377,8 +386,8 @@ namespace vApus.Stresstest {
                 #else
                 if (_parameterizedLogEntry[_getData].Count != 0) {
                     string getData = _parameterizedLogEntry[_getData].CombineValues();
-                    //if(_some_var != string.Empty) {
-                        //    getData = getData.Replace("@replaceSomething", _some_var);
+                    //if(_sid != string.Empty) {
+                        //getData = getData.Replace("@replaceSID", _sid);
                     //}
                     
                     _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}{1}?{2}",
@@ -414,7 +423,9 @@ namespace vApus.Stresstest {
             
             private void InitCookies() {
                 if (_cookieCollection == null) {
+                    _httpWebRequest.CookieContainer = new CookieContainer();
                     _cookieCollection = new CookieCollection();
+                    _cookieDecoder = new CookieDecoder();
                 }
                 
                 #if USELOGGEDCOOKIES
@@ -452,8 +463,8 @@ namespace vApus.Stresstest {
                     }
                     #endif
                     
-                    //if (_some_var != string.Empty) {
-                        //    postData = postData.Replace("@replaceSomething", _some_var);
+                    //if (_sid != string.Empty) {
+                        //postData = postData.Replace("@replaceSID", _sid);
                     //}
                     
                     _httpWebRequest.ContentLength = postData.Length;
@@ -471,42 +482,84 @@ namespace vApus.Stresstest {
             }
             
             private void HandleCookiesBeforeRequest() {
+                #if USECUSTOMCOOKIEPARSER
+                //Domain for the cookies should be determined here.
+                string authority = _httpWebRequest.RequestUri.GetLeftPart(UriPartial.Authority);
+                string scheme = _httpWebRequest.RequestUri.GetLeftPart(UriPartial.Scheme); //http:// https://
+                authority = authority.Substring(scheme.Length);
+                string domain = authority;
+                
+                // Support for top level domains; we probably don't need this.
+                // TODO: Should be tested with a URL (not IP) to verify this.
+                /*
+                    IPAddress ipAddress;
+                    if(!IPAddress.TryParse(authority, out ipAddress)) {
+                        int dotIndex = authority.IndexOf('.');
+                        if (dotIndex != -1 &amp;&amp; dotIndex != authority.Length - 1) {
+                            domain = authority.Substring(dotIndex + 1);
+                        }
+                    }
+                */
+                
+                foreach (Cookie cookie in _cookieCollection) {
+                    cookie.Domain = domain;
+                }
+                #endif
+                
                 _httpWebRequest.CookieContainer = new CookieContainer();
                 _httpWebRequest.CookieContainer.Add(_cookieCollection);
             }
             
             private void HandleCookiesAfterRequest() {
-                if (_httpWebRequest.CookieContainer.Count != 0) {
-                    foreach (Cookie cookie in _httpWebRequest.CookieContainer.GetCookies(_httpWebRequest.RequestUri)) {
-                        int cookieIndex = GetCookieIndex(cookie.Name);
-                        if (cookieIndex == -1) {
-                            _cookieCollection.Add(cookie);
-                        }
-                        else {
-                            _cookieCollection[cookieIndex].Value = cookie.Value;
-                        }
+                #if USECUSTOMCOOKIEPARSER
+                var newCookieCollection = GetCookies(_httpWebResponse.Headers);
+                var requestCookieCollection = GetCookies(_httpWebRequest.Headers);
+                #else
+                var newCookieCollection = _httpWebResponse.Cookies;
+                var requestCookieCollection = _httpWebRequest.CookieContainer.GetCookies(_httpWebRequest.RequestUri);
+                #endif
+                
+                // Add ASP authentication cookies and old cookies that might be important (better sending too many cookies than too few).
+                foreach (Cookie cookie in requestCookieCollection) {
+                    if (GetCookieIndex(cookie, newCookieCollection) == -1) {
+                        newCookieCollection.Add(cookie);
                     }
                 }
-                if (_httpWebResponse.Cookies.Count != 0) {
-                    foreach (Cookie cookie in _httpWebResponse.Cookies) {
-                        int cookieIndex = GetCookieIndex(cookie.Name);
-                        if (cookieIndex == -1) {
-                            _cookieCollection.Add(cookie);
-                        }
-                        else {
-                            _cookieCollection[cookieIndex].Value = cookie.Value;
-                        }
+                // Copy the cached cookies that are not yet in the collection, the check happens on the name of the cookie.
+                foreach (Cookie cookie in _cookieCollection) {
+                    if (GetCookieIndex(cookie, newCookieCollection) == -1) {
+                        newCookieCollection.Add(cookie);
                     }
                 }
+                _cookieCollection = newCookieCollection;
             }
             
-            private int GetCookieIndex(string cookieName) {
-                for (int i = 0; i &lt; _cookieCollection.Count; i++) {
-                    if (_cookieCollection[i].Name == cookieName) {
+            private int GetCookieIndex(Cookie cookie, CookieCollection cookieCollection) {
+                for (int i = 0; i &lt; cookieCollection.Count; i++) {
+                    if (cookieCollection[i].Name == cookie.Name) {
                         return i;
                     }
                 }
                 return -1;
+            }
+            
+            private CookieCollection GetCookies(WebHeaderCollection headers) {
+                var cookieCollection = new CookieCollection();
+                foreach (string headerName in headers.Keys) {
+                    string lowerheaderName = headerName.ToLower();
+                    if (lowerheaderName == "set-cookie" || lowerheaderName == "cookie") {
+                        foreach (Cookie cookie in _cookieDecoder.Decode(headers[headerName])) {
+                            int cookieIndex = GetCookieIndex(cookie, cookieCollection);
+                            if (cookieIndex == -1) {
+                                cookieCollection.Add(cookie);
+                            }
+                            else {
+                                cookieCollection[cookieIndex].Value = cookie.Value;
+                            }
+                        }
+                    }
+                }
+                return cookieCollection;
             }
         #endregion // Free Coding
     } // ConnectionProxy

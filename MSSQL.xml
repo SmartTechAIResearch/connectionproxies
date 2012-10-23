@@ -6,7 +6,7 @@
           <Items>
             <ConnectionProxySyntaxItem>
               <Items />
-              <Description>IP or computername</Description>
+              <Description>IP or hostname.</Description>
               <Label>Server</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
