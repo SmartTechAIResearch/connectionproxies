@@ -6,7 +6,7 @@
           <Items>
             <ConnectionProxySyntaxItem>
               <Items />
-              <Description>IP or hostname.</Description>
+              <Description>IP or computername</Description>
               <Label>Server</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
@@ -30,7 +30,7 @@
                   <IsEmpty>False</IsEmpty>
                 </Rule>
               </Items>
-              <Description>Default port = 1039</Description>
+              <Description>Default port = 1433</Description>
               <Label>Port</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
