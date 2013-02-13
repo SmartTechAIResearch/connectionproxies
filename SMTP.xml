@@ -8,7 +8,7 @@
               <Items />
               <Description>
               </Description>
-              <Label>IP or hostname.</Label>
+              <Label>IP or Hostname</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
               <IsEmpty>False</IsEmpty>

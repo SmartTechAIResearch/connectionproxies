@@ -47,8 +47,8 @@
     University College of West-Flanders, Department GKG
     
     Note: If you want to edit this connection proxy code you need to know what you are doing. You might break your stresstest.
-    	
-    	VERSION @BRANCH@-@TM@
+    
+    VERSION @BRANCH@-@TM@
 */
 
 // The following line is used to add references when compiling, you can edit this here or in the references tab page. Please use the 'Browse...' button for dlls that are not in the GAC.
@@ -313,7 +313,7 @@ namespace vApus.Stresstest {
                     }
                     catch (Exception ex) {
                         exception = ex;
-                        MessageBox.Show(exception.ToString());
+                        //MessageBox.Show(exception.ToString());
                     }
                     finally {
                         //
@@ -349,6 +349,12 @@ namespace vApus.Stresstest {
             public void Dispose() {
                 if (!_isDisposed) {
                     _isDisposed = true;
+                    try {
+                        // timeout immediately.
+                        _httpWebRequest.Timeout= 1;
+                        _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
+                    }catch{
+                    }
                     _httpWebRequest = null;
                     _httpWebResponse = null;
                     _cookieCollection= null;
