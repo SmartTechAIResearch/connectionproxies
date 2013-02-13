@@ -52,7 +52,7 @@
 */
 
 // The following line is used to add references when compiling, you can edit this here or in the references tab page. Please use the 'Browse...' button for dlls that are not in the GAC.
-// dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;System.Web.dll;System.Windows.Forms.dll;System.Core.dll;
+// dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;System.Web.dll;System.Windows.Forms.dll;
 
 #region Preprocessors
     //
@@ -63,32 +63,12 @@
     // do stuff...
     // #endif
     
-    // Use this preprocessor if you want to use the logged cookies. This will discard any cookies set by the server during
-    // the test and only use those that are specified in the Log.
-    //#define USELOGGEDCOOKIES
-    
-    // This preprocessor disabes .NET's own cookieparser and uses our own implementation instead. This should only be used when
-    // the cookiedomain is different than the used Connection, when cookies from another domain are discarded. For example a
-    // website sets its cookiedomain to ".cooldomain.com" but for testing we use a plain IP as Connection. In this case .NET
-    // would discard our cookies, which could break our test. Using this preprocessor rewrites the Connection Proxy to use a
-    // custom parser that works around this security feature.
-    //#define USECUSTOMCOOKIEPARSER
-    
     // When used, the Connection set in vApus will be ignored for the stresstest. The logged "Destination Host" is used instead.
     // This is sometimes necessary if for example authentication is redirected to a secondary server or if cookie-free
     // subdomains (or CDNs) are used to serve static content.
     // For this setting to work, the "Destination Host" value must be available in the Log.
     // This setting is not used while testing the Connection, so be sure to always setup a valid Connection in vApus.
     //#define USEMULTICONNECTION
-    
-    // ASP.NET websites usually use "viewstates" when submitting forms. Use the following preprocessor if this is the case.
-    // When using this preprocessor, don't forget to set the _viewstate_urls array in "Custom Fields" and replace logged
-    // viewstates and eventvalidations in your Log by the @replaceViewstate and @replaceEventvalidation tokens.
-    //#define USEVIEWSTATE
-    
-    // Some applications use custom HTTP headers. Use this preprocessor in combination with the _custom_headers array to
-    // to add this fucntionality to the test.
-    //#define USECUSTOMHEADERS
 #endregion // Preprocessors
 
 #region Usings
@@ -106,8 +86,6 @@
     using System.IO.Compression;
     using System.Web;
     using System.Windows.Forms;
-    using System.Linq;
-    using System.Collections.Generic;
 #endregion // Usings
 
 namespace vApus.Stresstest {
@@ -128,26 +106,17 @@ namespace vApus.Stresstest {
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
             CookieCollection _cookieCollection;
-            CookieDecoder _cookieDecoder;
             StreamReader _streamReader;
             const int _relativeUrl = 0, _requestMethod = 1, _getData = 2, _postData = 3, _cookies = 4, _userAgent = 5, _contentType = 6, _sourceIP = 7, _destinationIP = 8, _destinationHost = 9, _beginTimestamp = 10, _endTimestamp = 11;
-            string _viewstate = string.Empty, _eventvalidation = string.Empty;
+            string _repo_object = string.Empty;
             
             //
             // CUSTOMIZATION
             //
             
-            // This parameter is used in combination with the USEVIEWSTATE preprocessor. This array defines the relative URLs
-            // where a viewstate can be extracted.
-            //string [] _viewstate_urls = { "/Default.aspx" };
-            
-            // This parameter is used in combination with the USECUSTOMHEADERS preprocessor. This array defines custom HTTP
-            // headers used by the application.
-            //string [] _custom_headers = { "Accept-Language: nl-BE" };
-            
-            // Example of a custom sting you need extracted and inserted in GET and/or POST data (usually an ID of some sort).
-            // Throughout this connection proxy are blocks of example code commented for this specific usage.
-            //string _sid = string.Empty;
+            // Define the search strings (GETDATA) from the requests where to extract _repo_object in the location header of the response.
+            string _calendar_search = "application=personal_calendar&amp;go=publisher&amp;repoviewer_action=creator&amp;content_object_type=calendar_event";
+            string _document_search = "renderer=table&amp;tab=category&amp;application=repository&amp;go=creator&amp;content_object_type=document";
         #endregion // Fields
         
         #region Properties
@@ -186,6 +155,9 @@ namespace vApus.Stresstest {
                     _httpWebRequest.ContentLength = 0;
                     _httpWebRequest.ContentType = "application/x-www-form-urlencoded";
                     
+                    _cookieCollection= new CookieCollection();
+                    
+                    HandleCookiesBeforeRequest();
                     _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
                     
                     
@@ -200,6 +172,8 @@ namespace vApus.Stresstest {
                         _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), (_httpWebResponse.ContentEncoding.Length != 0) ?
                         System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
                     }
+                    
+                    HandleCookiesAfterRequest();
                 }
                 catch (Exception ex) {
                     error = ex.ToString();
@@ -280,40 +254,24 @@ namespace vApus.Stresstest {
                             System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
                         }
                         
-                        HandleCookiesAfterRequest();
-                        
-                        #if USEVIEWSTATE
-                        bool match = false;
-                        foreach (string url in _viewstate_urls) {
-                            if (_parameterizedLogEntry[_relativeUrl].Value == url) {
-                                match = true;
-                                break;
+                        // BEGIN CUSTOMIZATION
+                        // Here the _calendar_search is used to try and extract the _repo_object from the response's location header.
+                        // You can also add extra search strings for more pages (like saving documents in older Chamilo versions).
+                        if (_parameterizedLogEntry[_relativeUrl].Value.StartsWith("/chamilo/index.php") &amp;&amp;
+                        _parameterizedLogEntry[_getData].CombineValues() == _calendar_search) {
+                            if (! string.IsNullOrEmpty(_httpWebResponse.GetResponseHeader("Location"))) {
+                                var query = HttpUtility.ParseQueryString(_httpWebResponse.GetResponseHeader("Location"));
+                                _repo_object = query["repo_object"];
+                                //MessageBox.Show("_repo_object = " + _repo_object);
                             }
                         }
+                        // END CUSTOMIZATION
                         
-                        if (match &amp;&amp; _parameterizedLogEntry[_requestMethod].Value == "GET") {
-                            string page = _streamReader.ReadToEnd();
-                            
-                            string firstUsablePart = page.Split(new string[] { "&lt;input type=\"hidden\" name=\"__VIEWSTATE\" id=\"__VIEWSTATE\" value=\"" }, StringSplitOptions.None)[1];
-                            _viewstate = HttpUtility.UrlEncode(firstUsablePart.Split(new string[] {"\" /&gt;"}, StringSplitOptions.None)[0]);
-                            //_viewstate = firstUsablePart.Split(new string[] {"\" /&gt;"}, StringSplitOptions.None)[0];
-                            
-                            string secondUsablePart =
-                            firstUsablePart.Split(new string[] {"&lt;input type=\"hidden\" name=\"__EVENTVALIDATION\" id=\"__EVENTVALIDATION\" value=\""}, StringSplitOptions.None)[1];
-                            _eventvalidation = HttpUtility.UrlEncode(secondUsablePart.Split(new string[] {"\" /&gt;"}, StringSplitOptions.None)[0]);
-                            //_eventvalidation = secondUsablePart.Split(new string[] {"\" /&gt;"}, StringSplitOptions.None)[0];
-                        }
-                        #endif
+                        HandleCookiesAfterRequest();
                         
-                        //if (_parameterizedLogEntry[_relativeUrl].Value == "/index.php" || _parameterizedLogEntry[_relativeUrl].Value == "/ucp.php") {
-                            //var query = HttpUtility.ParseQueryString(_httpWebResponse.GetResponseHeader("Location"));
-                            //_some_var = query["some_query"];
-                            //_sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
-                        //}
                     }
                     catch (Exception ex) {
                         exception = ex;
-                        //MessageBox.Show(exception.ToString());
                     }
                     finally {
                         //
@@ -351,14 +309,13 @@ namespace vApus.Stresstest {
                     _isDisposed = true;
                     try {
                         // timeout immediately.
-                        _httpWebRequest.Timeout= 1;
+                        _httpWebRequest.Timeout = 1;
                         _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
                     }catch{
                     }
                     _httpWebRequest = null;
                     _httpWebResponse = null;
                     _cookieCollection= null;
-                    _cookieDecoder = null;
                     if (_streamReader != null) {
                         try {
                             _streamReader.Close();
@@ -376,10 +333,7 @@ namespace vApus.Stresstest {
             private void InitHttpWebRequest() {
                 #if USEMULTICONNECTION
                 if (_parameterizedLogEntry[_getData].Count != 0) {
-                    string getData = _parameterizedLogEntry[_getData].CombineValues();
-                    //if(_sid != string.Empty) {
-                        //    getData = getData.Replace("@replaceSID", _sid);
-                    //}
+                    string getData = ReplaceGetData(_parameterizedLogEntry[_getData].CombineValues());
                     
                     _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("http://{0}{1}?{2}",
                     _parameterizedLogEntry[_destinationHost].Value, _parameterizedLogEntry[_relativeUrl].Value,
@@ -391,10 +345,7 @@ namespace vApus.Stresstest {
                 }
                 #else
                 if (_parameterizedLogEntry[_getData].Count != 0) {
-                    string getData = _parameterizedLogEntry[_getData].CombineValues();
-                    //if(_sid != string.Empty) {
-                        //getData = getData.Replace("@replaceSID", _sid);
-                    //}
+                    string getData = ReplaceGetData(_parameterizedLogEntry[_getData].CombineValues());
                     
                     _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}{1}?{2}",
                     _connectionProxySyntaxItem0, _parameterizedLogEntry[_relativeUrl].Value,
@@ -408,7 +359,7 @@ namespace vApus.Stresstest {
                 
                 _httpWebRequest.UserAgent = _parameterizedLogEntry[_userAgent].Value;
                 // 60 seconds seems reasonable.
-                _httpWebRequest.Timeout= 60000;
+                _httpWebRequest.Timeout= 3600000;
                 _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
                 _httpWebRequest.AllowAutoRedirect = false;
                 _httpWebRequest.ServicePoint.Expect100Continue = false;
@@ -419,61 +370,42 @@ namespace vApus.Stresstest {
                 _httpWebRequest.ContentLength = 0;
                 
                 _httpWebRequest.ContentType = String.IsNullOrEmpty(_parameterizedLogEntry[_contentType].Value) ? "application/x-www-form-urlencoded" : _parameterizedLogEntry[_contentType].Value;
-                
-                #if USECUSTOMHEADERS
-                foreach (string header in _custom_headers) {
-                    _httpWebRequest.Headers.Add(header);
+            }
+            
+            private string ReplaceGetData(string getData) {
+                // BEGIN CUSTOMIZATION
+                if(_repo_object != string.Empty) {
+                    getData = getData.Replace("@repo_object", _repo_object);
                 }
-                #endif
+                // END CUSTOMIZATION
+                return getData;
             }
             
             private void InitCookies() {
                 if (_cookieCollection == null) {
-                    _httpWebRequest.CookieContainer = new CookieContainer();
                     _cookieCollection = new CookieCollection();
-                    _cookieDecoder = new CookieDecoder();
                 }
-                
-                #if USELOGGEDCOOKIES
-                foreach (var kvp in _parameterizedLogEntry[_cookies]) {
-                    string key = kvp[0].Value.TrimStart();
-                    string value = ((kvp.Count == 1) ? string.Empty : kvp[1].Value);
-                    
-                    int cookieIndex = GetCookieIndex(key);
-                    if (cookieIndex == -1) {
-                        Cookie cookie = new Cookie(key, value);
-                        
-                        // Trim http://
-                        cookie.Domain = _connectionProxySyntaxItem0.Substring(7);
-                        _cookieCollection.Add(cookie);
-                    }
-                }
-                #endif
             }
             
             private void ApplyPostData() {
                 if (_parameterizedLogEntry[_postData].Value.Length != 0) {
                     string postData = _parameterizedLogEntry[_postData].Value;
                     
-                    #if USEVIEWSTATE
-                    bool match = false;
-                    foreach (string url in _viewstate_urls) {
-                        if (_parameterizedLogEntry[_relativeUrl].Value == url) {
-                            match = true;
-                            break;
-                        }
+                    // BEGIN CUSTOMIZATION
+                    // Postdata gets replaced.
+                    if (_repo_object != string.Empty) {
+                        postData = postData.Replace("@repo_object_length", _repo_object.Length.ToString()).Replace("@repo_object", _repo_object);
                     }
                     
-                    if (match &amp;&amp; _viewstate != string.Empty) {
-                        postData = postData.Replace("@replaceViewstate", _viewstate).Replace("@replaceEventvalidation", _eventvalidation);
+                    // Some custom headers are added when _document_search match is found.
+                    if(_parameterizedLogEntry[_getData].CombineValues() == _document_search) {
+                        _httpWebRequest.Headers.Add("Pragma", "no-cache");
+                        _httpWebRequest.Headers.Add("Accept-Encoding", "gzip, deflate");
                     }
-                    #endif
-                    
-                    //if (_sid != string.Empty) {
-                        //postData = postData.Replace("@replaceSID", _sid);
-                    //}
+                    // END CUSTOMIZATION
                     
                     _httpWebRequest.ContentLength = postData.Length;
+                    
                     Stream postStream = _httpWebRequest.GetRequestStream();
                     StreamWriter postStreamWriter = new StreamWriter(postStream);
                     postStreamWriter.Write(postData);
@@ -488,84 +420,42 @@ namespace vApus.Stresstest {
             }
             
             private void HandleCookiesBeforeRequest() {
-                #if USECUSTOMCOOKIEPARSER
-                //Domain for the cookies should be determined here.
-                string authority = _httpWebRequest.RequestUri.GetLeftPart(UriPartial.Authority);
-                string scheme = _httpWebRequest.RequestUri.GetLeftPart(UriPartial.Scheme); //http:// https://
-                authority = authority.Substring(scheme.Length);
-                string domain = authority;
-                
-                // Support for top level domains; we probably don't need this.
-                // TODO: Should be tested with a URL (not IP) to verify this.
-                /*
-                    IPAddress ipAddress;
-                    if(!IPAddress.TryParse(authority, out ipAddress)) {
-                        int dotIndex = authority.IndexOf('.');
-                        if (dotIndex != -1 &amp;&amp; dotIndex != authority.Length - 1) {
-                            domain = authority.Substring(dotIndex + 1);
-                        }
-                    }
-                */
-                
-                foreach (Cookie cookie in _cookieCollection) {
-                    cookie.Domain = domain;
-                }
-                #endif
-                
                 _httpWebRequest.CookieContainer = new CookieContainer();
                 _httpWebRequest.CookieContainer.Add(_cookieCollection);
             }
             
             private void HandleCookiesAfterRequest() {
-                #if USECUSTOMCOOKIEPARSER
-                var newCookieCollection = GetCookies(_httpWebResponse.Headers);
-                var requestCookieCollection = GetCookies(_httpWebRequest.Headers);
-                #else
-                var newCookieCollection = _httpWebResponse.Cookies;
-                var requestCookieCollection = _httpWebRequest.CookieContainer.GetCookies(_httpWebRequest.RequestUri);
-                #endif
-                
-                // Add ASP authentication cookies and old cookies that might be important (better sending too many cookies than too few).
-                foreach (Cookie cookie in requestCookieCollection) {
-                    if (GetCookieIndex(cookie, newCookieCollection) == -1) {
-                        newCookieCollection.Add(cookie);
+                if (_httpWebRequest.CookieContainer.Count != 0) {
+                    foreach (Cookie cookie in _httpWebRequest.CookieContainer.GetCookies(_httpWebRequest.RequestUri)) {
+                        int cookieIndex = GetCookieIndex(cookie.Name);
+                        if (cookieIndex == -1) {
+                            _cookieCollection.Add(cookie);
+                        }
+                        else {
+                            _cookieCollection[cookieIndex].Value = cookie.Value;
+                        }
                     }
                 }
-                // Copy the cached cookies that are not yet in the collection, the check happens on the name of the cookie.
-                foreach (Cookie cookie in _cookieCollection) {
-                    if (GetCookieIndex(cookie, newCookieCollection) == -1) {
-                        newCookieCollection.Add(cookie);
+                if (_httpWebResponse.Cookies.Count != 0) {
+                    foreach (Cookie cookie in _httpWebResponse.Cookies) {
+                        int cookieIndex = GetCookieIndex(cookie.Name);
+                        if (cookieIndex == -1) {
+                            _cookieCollection.Add(cookie);
+                        }
+                        else {
+                            _cookieCollection[cookieIndex].Value = cookie.Value;
+                        }
                     }
                 }
-                _cookieCollection = newCookieCollection;
             }
             
-            private int GetCookieIndex(Cookie cookie, CookieCollection cookieCollection) {
-                for (int i = 0; i &lt; cookieCollection.Count; i++) {
-                    if (cookieCollection[i].Name == cookie.Name) {
+            private int GetCookieIndex(string cookieName) {
+                for (int i = 0; i &lt; _cookieCollection.Count; i++) {
+                    if (_cookieCollection[i].Name == cookieName) {
                         return i;
                     }
                 }
                 return -1;
-            }
-            
-            private CookieCollection GetCookies(WebHeaderCollection headers) {
-                var cookieCollection = new CookieCollection();
-                foreach (string headerName in headers.Keys) {
-                    string lowerheaderName = headerName.ToLower();
-                    if (lowerheaderName == "set-cookie" || lowerheaderName == "cookie") {
-                        foreach (Cookie cookie in _cookieDecoder.Decode(headers[headerName])) {
-                            int cookieIndex = GetCookieIndex(cookie, cookieCollection);
-                            if (cookieIndex == -1) {
-                                cookieCollection.Add(cookie);
-                            }
-                            else {
-                                cookieCollection[cookieIndex].Value = cookie.Value;
-                            }
-                        }
-                    }
-                }
-                return cookieCollection;
             }
         #endregion // Free Coding
     } // ConnectionProxy
@@ -575,7 +465,7 @@ namespace vApus.Stresstest {
           <IsEmpty>False</IsEmpty>
         </ConnectionProxyCode>
       </Items>
-      <Label>HTTP @BRANCH@-@TM@</Label>
+      <Label>HTTP CHAMILO @BRANCH@-@TM@</Label>
       <ShowInGui>True</ShowInGui>
       <IsDefaultItem>False</IsDefaultItem>
       <IsEmpty>False</IsEmpty>

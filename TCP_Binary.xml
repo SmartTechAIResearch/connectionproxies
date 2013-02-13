@@ -6,7 +6,7 @@
           <Items>
             <ConnectionProxySyntaxItem>
               <Items />
-              <Description>Must start with 'http://' and may not end with /.</Description>
+              <Description></Description>
               <Label>IP</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
