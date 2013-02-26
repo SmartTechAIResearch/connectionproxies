@@ -254,6 +254,8 @@ namespace vApus.Stresstest {
                             System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
                         }
                         
+                        DownloadResponse();
+                        
                         // BEGIN CUSTOMIZATION
                         // Here the _calendar_search is used to try and extract the _repo_object from the response's location header.
                         // You can also add extra search strings for more pages (like saving documents in older Chamilo versions).
@@ -311,7 +313,7 @@ namespace vApus.Stresstest {
                         // timeout immediately.
                         _httpWebRequest.Timeout = 1;
                         _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
-                    }catch{
+                        }catch{
                     }
                     _httpWebRequest = null;
                     _httpWebResponse = null;
@@ -358,7 +360,6 @@ namespace vApus.Stresstest {
                 #endif
                 
                 _httpWebRequest.UserAgent = _parameterizedLogEntry[_userAgent].Value;
-                // 60 seconds seems reasonable.
                 _httpWebRequest.Timeout= 3600000;
                 _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
                 _httpWebRequest.AllowAutoRedirect = false;
@@ -456,6 +457,15 @@ namespace vApus.Stresstest {
                     }
                 }
                 return -1;
+            }
+            
+            // #373: HTTP Connection proxy does not download responses
+            private void DownloadResponse() {
+                char[] buffer = new char[1024];
+                int count = 0;
+                do {
+                    count = _streamReader.Read(buffer, 0, 1024);
+                } while (count != 0);
             }
         #endregion // Free Coding
     } // ConnectionProxy

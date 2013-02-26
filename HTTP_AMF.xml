@@ -235,6 +235,8 @@ namespace vApus.Stresstest {
                             System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
                         }
                         
+                        DownloadResponse();
+                        
                         //HandleCookiesAfterRequest();
                         
                         //WritePage(_streamReader.ReadToEnd(), string.Concat_parameterizedLogEntry[_relativeUrl].Value.Replace("/", "_"), ".htm"));
@@ -276,11 +278,11 @@ namespace vApus.Stresstest {
             public void Dispose() {
                 if (!_isDisposed) {
                     _isDisposed = true;
-                                        try {
+                    try {
                         // timeout immediately.
                         _httpWebRequest.Timeout= 1;
                         _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
-                    }catch{
+                        }catch{
                     }
                     _httpWebRequest = null;
                     _httpWebResponse = null;
@@ -413,6 +415,16 @@ namespace vApus.Stresstest {
                 sw.Dispose();
                 sw = null;
                 Process.Start(path);
+            }
+            
+            // #373: HTTP Connection proxy does not download responses
+            private void DownloadResponse() {
+                char[] buffer = new char[1024];
+                int count = _streamReader.Read(buffer, 0, 1024);
+
+                while (count != 0) {
+                    count = _streamReader.Read(buffer, 0, 1024);
+                }
             }
         #endregion // Free Coding
     } // ConnectionProxy

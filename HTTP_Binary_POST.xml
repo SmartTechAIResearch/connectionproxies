@@ -249,6 +249,13 @@ namespace vApus.Stresstest {
                         
                         _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
                         stream = _httpWebResponse.GetResponseStream();
+                        // #373: HTTP Connection proxy does not download responses
+                        StreamReader streamReader = new StreamReader(stream);
+                        char[] buffer = new char[1024];
+                        int count = 0;
+                        do {
+                            count = streamReader.Read(buffer, 0, 1024);
+                        } while (count != 0);
                         stream.Close();
                         stream.Dispose();
                         stream = null;
@@ -291,16 +298,16 @@ namespace vApus.Stresstest {
             public void Dispose() {
                 if (!_isDisposed) {
                     _isDisposed = true;
-                                        try {
+                    try {
                         // timeout immediately.
                         _httpWebRequest.Timeout= 1;
                         _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
-                    }catch{
+                        }catch{
                     }
                     _httpWebRequest = null;
                     _httpWebResponse = null;
                     _cookies = null;
-                     if (_streamReader != null) {
+                    if (_streamReader != null) {
                         try {
                             _streamReader.Close();
                             _streamReader.Dispose();
