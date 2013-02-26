@@ -280,8 +280,6 @@ namespace vApus.Stresstest {
                             System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
                         }
                         
-                        HandleCookiesAfterRequest();
-                        
                         #if USEVIEWSTATE
                         bool match = false;
                         foreach (string url in _viewstate_urls) {
@@ -303,7 +301,14 @@ namespace vApus.Stresstest {
                             _eventvalidation = HttpUtility.UrlEncode(secondUsablePart.Split(new string[] {"\" /&gt;"}, StringSplitOptions.None)[0]);
                             //_eventvalidation = secondUsablePart.Split(new string[] {"\" /&gt;"}, StringSplitOptions.None)[0];
                         }
+                        else {
+                            DownloadResponse();
+                        }
+                        #else
+                            DownloadResponse();
                         #endif
+                        
+                        HandleCookiesAfterRequest();
                         
                         //if (_parameterizedLogEntry[_relativeUrl].Value == "/index.php" || _parameterizedLogEntry[_relativeUrl].Value == "/ucp.php") {
                             //var query = HttpUtility.ParseQueryString(_httpWebResponse.GetResponseHeader("Location"));
@@ -353,7 +358,7 @@ namespace vApus.Stresstest {
                         // timeout immediately.
                         _httpWebRequest.Timeout= 1;
                         _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
-                    }catch{
+                        }catch{
                     }
                     _httpWebRequest = null;
                     _httpWebResponse = null;
@@ -566,6 +571,15 @@ namespace vApus.Stresstest {
                     }
                 }
                 return cookieCollection;
+            }
+            
+            // #373: HTTP Connection proxy does not download responses
+            private void DownloadResponse() {
+                char[] buffer = new char[1024];
+                int count = 0;
+                do {
+                    count = _streamReader.Read(buffer, 0, 1024);
+                } while (count != 0);
             }
         #endregion // Free Coding
     } // ConnectionProxy
