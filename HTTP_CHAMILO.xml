@@ -107,6 +107,7 @@ namespace vApus.Stresstest {
             HttpWebResponse _httpWebResponse;
             CookieCollection _cookieCollection;
             StreamReader _streamReader;
+            char[] _buffer = new char[1024]; int _count = -1;
             const int _relativeUrl = 0, _requestMethod = 1, _getData = 2, _postData = 3, _cookies = 4, _userAgent = 5, _contentType = 6, _sourceIP = 7, _destinationIP = 8, _destinationHost = 9, _beginTimestamp = 10, _endTimestamp = 11;
             string _repo_object = string.Empty;
             
@@ -143,9 +144,9 @@ namespace vApus.Stresstest {
                 try {
                     _httpWebRequest= (HttpWebRequest)System.Net.WebRequest.Create(new Uri(_connectionProxySyntaxItem0));
                     _httpWebRequest.UserAgent = "vApus v2 - Test connection function";
-                    // 60 seconds seems reasonable.
-                    _httpWebRequest.Timeout= 60000;
+                    _httpWebRequest.Timeout = 60000;
                     _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
+                    //_httpWebRequest.KeepAlive = false;
                     _httpWebRequest.AllowAutoRedirect = false;
                     _httpWebRequest.ServicePoint.Expect100Continue = false;
                     
@@ -310,7 +311,7 @@ namespace vApus.Stresstest {
                 if (!_isDisposed) {
                     _isDisposed = true;
                     try {
-                        // timeout immediately.
+                        // Timeout immediately.
                         _httpWebRequest.Timeout = 1;
                         _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
                         }catch{
@@ -360,8 +361,9 @@ namespace vApus.Stresstest {
                 #endif
                 
                 _httpWebRequest.UserAgent = _parameterizedLogEntry[_userAgent].Value;
-                _httpWebRequest.Timeout= 3600000;
+                _httpWebRequest.Timeout = 3600000;
                 _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
+                //_httpWebRequest.KeepAlive = false;
                 _httpWebRequest.AllowAutoRedirect = false;
                 _httpWebRequest.ServicePoint.Expect100Continue = false;
                 
@@ -459,13 +461,20 @@ namespace vApus.Stresstest {
                 return -1;
             }
             
-            // #373: HTTP Connection proxy does not download responses
-            private void DownloadResponse() {
-                char[] buffer = new char[1024];
-                int count = 0;
-                do {
-                    count = _streamReader.Read(buffer, 0, 1024);
-                } while (count != 0);
+            // Downloads the full response and returns the page.
+            // If discard is set (default), the response will be buffered in small blocks and discarded.
+            // If we want to keep the full response for parsing, set discard = false.
+            private string DownloadResponse(bool discard = true) {
+                if (discard) {
+                    do {
+                        _count = _streamReader.Read(_buffer, 0, 1024);
+                    } while (_count != 0);
+                }
+                else {
+                    return _streamReader.ReadToEnd();
+                }
+                
+                return string.Empty;
             }
         #endregion // Free Coding
     } // ConnectionProxy
