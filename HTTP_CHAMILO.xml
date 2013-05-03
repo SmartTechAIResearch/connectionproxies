@@ -102,7 +102,7 @@ namespace vApus.Stresstest {
             bool _isDisposed;
             // Please do not edit the following lines (RuleSetFields).
             // -- RuleSetFields --
-            System.String _connectionProxySyntaxItem0 = string.Empty; // Host
+            System.String _connectionProxySyntaxItem0 = string.Empty; // URL
             // -- RuleSetFields --
             
             StringTree _parameterizedLogEntry;
@@ -357,19 +357,19 @@ namespace vApus.Stresstest {
                 _parameterizedLogEntry[_relativeUrl].Value, ReplaceGetData(getData))));
                 
                 _httpWebRequest.UserAgent = _parameterizedLogEntry[_userAgent].Value;
-                // 60 seconds seems reasonable.
+                // A 60 second timeout should be reasonable.
                 _httpWebRequest.Timeout= 60000;
                 _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
-                //_httpWebRequest.KeepAlive = false;
+                // Allow keepalive.
+                _httpWebRequest.KeepAlive = true;
+                // Allow compression.
+                _httpWebRequest.Headers.Add("Accept-Encoding: gzip, deflate");
+                // Don't autoredirect: redirects are already logged.
                 _httpWebRequest.AllowAutoRedirect = false;
                 _httpWebRequest.ServicePoint.Expect100Continue = false;
-                
                 _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
-                
                 _httpWebRequest.Method = _parameterizedLogEntry[_requestMethod].Value;
                 _httpWebRequest.ContentLength = 0;
-                
-                _httpWebRequest.ContentType = String.IsNullOrEmpty(_parameterizedLogEntry[_contentType].Value) ? "application/x-www-form-urlencoded" : _parameterizedLogEntry[_contentType].Value;
             }
             
             private string ReplaceGetData(string getData) {
@@ -405,6 +405,7 @@ namespace vApus.Stresstest {
                     // END CUSTOMIZATION
                     
                     _httpWebRequest.ContentLength = postData.Length;
+                    _httpWebRequest.ContentType = String.IsNullOrEmpty(_parameterizedLogEntry[_contentType].Value) ? "application/x-www-form-urlencoded" : _parameterizedLogEntry[_contentType].Value;
                     Stream postStream = _httpWebRequest.GetRequestStream();
                     StreamWriter postStreamWriter = new StreamWriter(postStream);
                     postStreamWriter.Write(postData);
