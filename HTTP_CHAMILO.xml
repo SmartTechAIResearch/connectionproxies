@@ -62,7 +62,7 @@
     //
     // Further in code:
     // #if NOTMUCHUSEDFEATURE
-    // do stuff...
+        // do stuff...
     // #endif
     
     // When used, the Connection set in vApus will be ignored for the stresstest. The logged "Destination Host" is used instead.
@@ -88,6 +88,9 @@
     using System.Windows.Forms;
     using System.Security.Cryptography.X509Certificates;
     
+    // EXPERIMENTAL //
+    //using System.Reflection;
+        
     //
     // CUSTOMIZATION:
     //    Put your own usings here.
@@ -112,7 +115,7 @@ namespace vApus.Stresstest {
             StreamReader _streamReader;
             char[] _buffer = new char[1024]; int _count = -1;
             // Labels, for the index values of the StringTree nodes (eg. int ip = 0).
-            const int _relativeUrl = 0, _requestMethod = 1, _getData = 2, _postData = 3, _cookies = 4, _userAgent = 5, _contentType = 6, _sourceIP = 7, _destinationIP = 8, _destinationHost = 9, _beginTimestamp = 10, _endTimestamp = 11, _destinationPort = 12, _protocol = 13;
+            const int _relativeUrl = 0, _requestMethod = 1, _getData = 2, _postData = 3, _cookies = 4, _userAgent = 5, _contentType = 6, _sourceIP = 7, _destinationIP = 8, _destinationHost = 9, _beginTimestamp = 10, _endTimestamp = 11, _destinationPort = 12, _protocol = 13, _accept = 14, _referer = 15;
             string _repo_object = string.Empty;
             
             //
@@ -152,18 +155,14 @@ namespace vApus.Stresstest {
                     _httpWebRequest.UserAgent = "vApus v2 - Test connection function";
                     _httpWebRequest.Timeout = 60000;
                     _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
-                    //_httpWebRequest.KeepAlive = false;
+                    _httpWebRequest.KeepAlive = false;
                     _httpWebRequest.AllowAutoRedirect = false;
                     _httpWebRequest.ServicePoint.Expect100Continue = false;
-                    
                     _httpWebRequest.ServicePoint.ConnectionLimit = 1;
-                    
                     _httpWebRequest.Method = "GET";
                     _httpWebRequest.ContentLength = 0;
-                    _httpWebRequest.ContentType = "application/x-www-form-urlencoded";
                     
                     _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
-                    
                     
                     if (_httpWebResponse.StatusCode == HttpStatusCode.NotFound) {
                         throw new Exception("Page not found!");
@@ -356,20 +355,33 @@ namespace vApus.Stresstest {
                 _parameterizedLogEntry[_protocol].Value, getDestinationHost(), _parameterizedLogEntry[_destinationPort].Value,
                 _parameterizedLogEntry[_relativeUrl].Value, ReplaceGetData(getData))));
                 
-                _httpWebRequest.UserAgent = _parameterizedLogEntry[_userAgent].Value;
+                // Set the HTTP request method (GET/POST).
+                _httpWebRequest.Method = _parameterizedLogEntry[_requestMethod].Value;
+                // Set the Accept header.
+                _httpWebRequest.Accept = _parameterizedLogEntry[_accept].Value;
+                // Set the Referer header.
+                if (! string.IsNullOrEmpty(_parameterizedLogEntry[_referer].Value)) {
+                    _httpWebRequest.Referer = _parameterizedLogEntry[_referer].Value;
+                }
                 // A 60 second timeout should be reasonable.
-                _httpWebRequest.Timeout= 60000;
+                _httpWebRequest.Timeout = 60000;
                 _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
                 // Allow keepalive.
                 _httpWebRequest.KeepAlive = true;
                 // Allow compression.
                 _httpWebRequest.Headers.Add("Accept-Encoding: gzip, deflate");
+                // Set the Accept-Language header.
+                _httpWebRequest.Headers.Add("Accept-Language: en-US");
                 // Don't autoredirect: redirects are already logged.
                 _httpWebRequest.AllowAutoRedirect = false;
+                // Set the initial content length to 0.
+                _httpWebRequest.ContentLength = 0;
+                // Fancy stuff.
                 _httpWebRequest.ServicePoint.Expect100Continue = false;
                 _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
-                _httpWebRequest.Method = _parameterizedLogEntry[_requestMethod].Value;
-                _httpWebRequest.ContentLength = 0;
+                
+                // EXPERIMENTAL //
+                //_httpWebRequest.ServicePoint.GetType().GetProperty("HttpBehaviour", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_httpWebRequest.ServicePoint, (byte)0, null);
             }
             
             private string ReplaceGetData(string getData) {
@@ -460,9 +472,9 @@ namespace vApus.Stresstest {
             
             private string getDestinationHost() {
                 #if USEMULTICONNECTION
-                return _parameterizedLogEntry[_destinationHost].Value;
-                #else
-                return _connectionProxySyntaxItem0;
+                    return _parameterizedLogEntry[_destinationHost].Value;
+                    #else
+                    return _connectionProxySyntaxItem0;
                 #endif
             }
             
