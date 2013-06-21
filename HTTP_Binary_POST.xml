@@ -21,6 +21,8 @@
                   <IsEmpty>False</IsEmpty>
                 </Rule>
               </Items>
+              <DefaultValue>
+              </DefaultValue>
               <Description>Must start with 'http://' and may not end with /.</Description>
               <Label>Uri</Label>
               <ShowInGui>True</ShowInGui>
@@ -29,6 +31,8 @@
             </ConnectionProxySyntaxItem>
             <ConnectionProxySyntaxItem>
               <Items />
+              <DefaultValue>
+              </DefaultValue>
               <Description>Examples: application/x-www-form-urlencoded; application/x-amf</Description>
               <Label>Content Type</Label>
               <ShowInGui>True</ShowInGui>
@@ -66,8 +70,11 @@
     //
     // Further in code:
     // #if NOTMUCHUSEDFEATURE
-    // do stuff...
+        // do stuff...
     // #endif
+    
+    // Enable DEBUG mode
+    //#define DEBUG
 #endregion // Preprocessors
 
 #region Usings
@@ -131,7 +138,7 @@ namespace vApus.Stresstest {
                 
                 try {
                     _httpWebRequest= (HttpWebRequest)System.Net.WebRequest.Create(new Uri(_connectionProxySyntaxItem0));
-                    _httpWebRequest.UserAgent = "vApus v2 - " + GetHashCode();
+                    _httpWebRequest.UserAgent = "vApus - " + GetHashCode();
                     _httpWebRequest.Timeout = 3600000;
                     _httpWebRequest.AllowAutoRedirect = false;
                     _httpWebRequest.ServicePoint.Expect100Continue = false;
@@ -363,7 +370,7 @@ namespace vApus.Stresstest {
             
             private void InitHttpWebRequest(int contentLength) {
                 _httpWebRequest = HttpWebRequest.Create(_connectionProxySyntaxItem0) as HttpWebRequest;
-                _httpWebRequest.UserAgent = "vApus v2 - " + GetHashCode();
+                _httpWebRequest.UserAgent = "vApus - " + GetHashCode();
                 _httpWebRequest.Timeout = 60000;
                 _httpWebRequest.AllowAutoRedirect = false;
                 _httpWebRequest.ServicePoint.Expect100Continue = false;
