@@ -206,7 +206,7 @@ namespace vApus.Stresstest {
             
             // Example of a custom sting you need extracted and inserted in GET and/or POST data (usually an ID of some sort).
             // Throughout this connection proxy are blocks of example code commented for this specific usage.
-            string _sid = string.Empty;
+            //string _sid = string.Empty;
         #endregion // Fields
         
         #region Properties
@@ -382,30 +382,26 @@ namespace vApus.Stresstest {
                         //
                         
                         #if USEVIEWSTATE
-                            bool match = false;
-                            foreach (string url in _viewstate_urls) {
-                                if (_parameterizedLogEntry[_relativeUrl].Value == url) {
-                                    match = true;
-                                    break;
-                                }
-                            }
                             
-                            if (match &amp;&amp; _parameterizedLogEntry[_requestMethod].Value == "GET") {
-                                string response = DownloadResponse(false);
-                                
-                                string first = response.Split(new string[] { "&lt;input type=\"hidden\" name=\"__VIEWSTATE\" id=\"__VIEWSTATE\" value=\"" }, StringSplitOptions.None)[1];
-                                _viewstate = HttpUtility.UrlEncode(first.Split(new string[] {"\" /&gt;"}, StringSplitOptions.None)[0]);
-                                
-                                string second = first.Split(new string[] {"&lt;input type=\"hidden\" name=\"__EVENTVALIDATION\" id=\"__EVENTVALIDATION\" value=\""}, StringSplitOptions.None)[1];
-                                _eventvalidation = HttpUtility.UrlEncode(second.Split(new string[] {"\" /&gt;"}, StringSplitOptions.None)[0]);
-                                
-                                #if DEBUG
-                                    EventPanel.AddEvent("USEVIEWSTATE\n  _viewstate: " + _viewstate + "\n  _eventvalidation: " + _eventvalidation);
-                                #endif
+                            string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
+                            string method = _parameterizedLogEntry[_requestMethod].Value;
+                            
+                            if (_viewstate_urls.Contains(relUrl) &amp;&amp; method == "GET") {
+                                string response = DownloadResponse(false); // Get full response in memory
+                                _viewstate = HttpUtility.UrlEncode(response.GetStringBetween("&lt;input type=\"hidden\" name=\"__VIEWSTATE\" id=\"__VIEWSTATE\" value=\"", "\" /&gt;"));
+                                _eventvalidation = HttpUtility.UrlEncode(response.GetStringBetween("&lt;input type=\"hidden\" name=\"__EVENTVALIDATION\" id=\"__EVENTVALIDATION\" value=\"", "\" /&gt;"));
                             }
                             else {
-                                DownloadResponse();
+                                DownloadResponse(); // Discard response while it gets downloaded
                             }
+                            
+                            #if DEBUG
+                                EventPanel.AddEvent("USEVIEWSTATE"
+                                + "\n  relUrl: " + relUrl
+                                + "\n  method: " + method
+                                + "\n  viewstate: " + _viewstate
+                                + "\n  eventvalidation: " + _eventvalidation;
+                            #endif
                             
                             #elif USEDRUPAL
                             string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
@@ -640,15 +636,7 @@ namespace vApus.Stresstest {
                     string postData = _parameterizedLogEntry[_postData].Value;
                     
                     #if USEVIEWSTATE
-                        bool match = false;
-                        foreach (string url in _viewstate_urls) {
-                            if (_parameterizedLogEntry[_relativeUrl].Value == url) {
-                                match = true;
-                                break;
-                            }
-                        }
-                        
-                        if (match &amp;&amp; _viewstate != string.Empty) {
+                        if (_viewstate_urls.Contains(_parameterizedLogEntry[_relativeUrl].Value) &amp;&amp; _viewstate != string.Empty) {
                             postData = postData.Replace("@replaceViewstate", _viewstate).Replace("@replaceEventvalidation", _eventvalidation);
                         }
                         
