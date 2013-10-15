@@ -6,7 +6,9 @@
           <Items>
             <ConnectionProxySyntaxItem>
               <Items />
-              <Description>IP or computername</Description>
+              <DefaultValue>
+              </DefaultValue>
+              <Description>IP or hostname</Description>
               <Label>Server</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
@@ -30,7 +32,8 @@
                   <IsEmpty>False</IsEmpty>
                 </Rule>
               </Items>
-              <Description>Default port = 1039</Description>
+              <DefaultValue>1433</DefaultValue>
+              <Description>Default port = 1433</Description>
               <Label>Port</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
@@ -38,8 +41,9 @@
             </ConnectionProxySyntaxItem>
             <ConnectionProxySyntaxItem>
               <Items />
-              <Description>
-              </Description>
+              <DefaultValue>
+              </DefaultValue>
+              <Description>The database to connect to</Description>
               <Label>Database</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
@@ -47,8 +51,9 @@
             </ConnectionProxySyntaxItem>
             <ConnectionProxySyntaxItem>
               <Items />
-              <Description>
-              </Description>
+              <DefaultValue>
+              </DefaultValue>
+              <Description>Username</Description>
               <Label>User ID</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
@@ -72,8 +77,9 @@
                   <IsEmpty>False</IsEmpty>
                 </Rule>
               </Items>
-              <Description>
-              </Description>
+              <DefaultValue>
+              </DefaultValue>
+              <Description>Password</Description>
               <Label>Password</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
@@ -97,6 +103,7 @@
                   <IsEmpty>False</IsEmpty>
                 </Rule>
               </Items>
+              <DefaultValue>False</DefaultValue>
               <Description>False (adviced) or True (starts with a capital letter)</Description>
               <Label>Pooling</Label>
               <ShowInGui>True</ShowInGui>
@@ -105,6 +112,7 @@
             </ConnectionProxySyntaxItem>
             <ConnectionProxySyntaxItem>
               <Items />
+              <DefaultValue>dbmssocn</DefaultValue>
               <Description>Default = dbmssocn</Description>
               <Label>Network Library</Label>
               <ShowInGui>True</ShowInGui>
