@@ -469,7 +469,7 @@ namespace vApus.Stresstest {
                             //var query = HttpUtility.ParseQueryString(_httpWebResponse.GetResponseHeader("Location"));
                             //_some_var = query["some_query"];
                             //_sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
-                            
+                            //
                             //#if DEBUG
                                 //EventPanel.AddEvent("_sid: " + _sid);
                             //#endif
@@ -517,289 +517,289 @@ namespace vApus.Stresstest {
                     _isDisposed = true;
                     try {
                         // Timeout immediately.
-                        _httpWebRequest.Timeout = 1;
+                        _httpWebRequest.Abort();
+                        } catch {}
+                        _httpWebRequest = null;
+                        _httpWebResponse = null;
+                        _cookieCollection= null;
+                        _cookieDecoder = null;
+                        if (_streamReader != null) {
+                            try {
+                                _streamReader.Close();
+                                _streamReader.Dispose();
+                                _streamReader = null;
+                                } catch {}
+                            }
+                        }
+                    }
+                #endregion // Functions
+                
+                #region Free Coding
+                    //Trust all certificates for https testing.
+                    public static bool TrustAllCertificatesCallback(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors errors){
+                        return true;
+                    }
+                    
+                    private void InitHttpWebRequest() {
+                        string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
+                        string getData = _parameterizedLogEntry[_getData].CombineValues();
+                        
+                        // RelUrl changes.
+                        #if USEDRUPAL
+                            if (relUrl == "/node/@replaceNode" &amp;&amp; _redirectNode != string.Empty) {
+                                relUrl = relUrl.Replace("@replaceNode", _redirectNode);
+                            }
+                        #endif
+                        
+                        // GetData changes.
+                        #if USECHAMILO
+                            if(getData.Length != 0 &amp;&amp; _repo_object != string.Empty) {
+                                getData = "?" + getData.Replace("@repo_object", _repo_object);
+                            }
+                            
+                            #else
+                            if(getData.Length != 0) {
+                                getData = "?" + getData; 
+                                //if(_sid != string.Empty) {
+                                    //getData = getData.Replace("@replaceSID", _sid);
+                                //}
+                            }
+                        #endif
+                        
+                        _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}://{1}:{2}{3}{4}",
+                        _parameterizedLogEntry[_protocol].Value, getDestinationHost(), _parameterizedLogEntry[_destinationPort].Value,
+                        relUrl, getData)));
+                        
+                        // Set the HTTP request method (GET/POST).
+                        _httpWebRequest.Method = _parameterizedLogEntry[_requestMethod].Value;
+                        // Set the Accept header.
+                        _httpWebRequest.Accept = _parameterizedLogEntry[_accept].Value;
+                        // Set the Referer header.
+                        #if USEREFERER
+                            _httpWebRequest.Referer = _parameterizedLogEntry[_referer].Value;
+                        #endif
+                        // A 60 second timeout should be reasonable.
+                        _httpWebRequest.Timeout = 60000;
                         _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
-                        }catch{
-                    }
-                    _httpWebRequest = null;
-                    _httpWebResponse = null;
-                    _cookieCollection= null;
-                    _cookieDecoder = null;
-                    if (_streamReader != null) {
-                        try {
-                            _streamReader.Close();
-                            _streamReader.Dispose();
-                            _streamReader = null;
-                        }
-                        catch {
-                        }
-                    }
-                }
-            }
-        #endregion // Functions
-        
-        #region Free Coding
-            //Trust all certificates for https testing.
-            public static bool TrustAllCertificatesCallback(object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors errors){
-                return true;
-            }
-            
-            private void InitHttpWebRequest() {
-                string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
-                string getData = _parameterizedLogEntry[_getData].CombineValues();
-                
-                // RelUrl changes.
-                #if USEDRUPAL
-                    if (relUrl == "/node/@replaceNode" &amp;&amp; _redirectNode != string.Empty) {
-                        relUrl = relUrl.Replace("@replaceNode", _redirectNode);
-                    }
-                #endif
-                
-                // GetData changes.
-                #if USECHAMILO
-                    if(getData.Length != 0 &amp;&amp; _repo_object != string.Empty) {
-                        getData = "?" + getData.Replace("@repo_object", _repo_object);
-                    }
-                    
-                    #else
-                    if(getData.Length != 0) {
-                        getData = "?" + getData; 
-                        //if(_sid != string.Empty) {
-                            //getData = getData.Replace("@replaceSID", _sid);
-                        //}
-                    }
-                #endif
-                
-                _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}://{1}:{2}{3}{4}",
-                _parameterizedLogEntry[_protocol].Value, getDestinationHost(), _parameterizedLogEntry[_destinationPort].Value,
-                relUrl, getData)));
-                
-                // Set the HTTP request method (GET/POST).
-                _httpWebRequest.Method = _parameterizedLogEntry[_requestMethod].Value;
-                // Set the Accept header.
-                _httpWebRequest.Accept = _parameterizedLogEntry[_accept].Value;
-                // Set the Referer header.
-                #if USEREFERER
-                    _httpWebRequest.Referer = _parameterizedLogEntry[_referer].Value;
-                #endif
-                // A 60 second timeout should be reasonable.
-                _httpWebRequest.Timeout = 60000;
-                _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
-                // Allow keepalive.
-                _httpWebRequest.KeepAlive = true;
-                // Allow compression.
-                _httpWebRequest.Headers.Add("Accept-Encoding: gzip, deflate");
-                // Set the Accept-Language header.
-                _httpWebRequest.Headers.Add("Accept-Language: en-US");
-                // Don't autoredirect: redirects are already logged.
-                _httpWebRequest.AllowAutoRedirect = false;
-                // Set the initial content length to 0.
-                _httpWebRequest.ContentLength = 0;
-                // Fancy stuff.
-                _httpWebRequest.ServicePoint.Expect100Continue = false;
-                _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
-                
-                // EXPERIMENTAL - Allways set KeepAlive header //
-                //_httpWebRequest.ServicePoint.GetType().GetProperty("HttpBehaviour", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_httpWebRequest.ServicePoint, (byte)0, null);
-                
-                #if USECUSTOMHEADERS
-                    foreach (string header in _custom_headers) {
-                        _httpWebRequest.Headers.Add(header);
-                    }
-                #endif
-            }
-            
-            private void InitCookies() {
-                if (_cookieCollection == null) {
-                    _httpWebRequest.CookieContainer = new CookieContainer();
-                    _cookieCollection = new CookieCollection();
-                    _cookieDecoder = new CookieDecoder();
-                }
-                
-                #if USELOGGEDCOOKIES
-                    foreach (var kvp in _parameterizedLogEntry[_cookies]) {
-                        string key = kvp[0].Value.TrimStart();
-                        string value = ((kvp.Count == 1) ? string.Empty : kvp[1].Value);
-                        Cookie cookie = new Cookie(key, value);
+                        // Allow keepalive.
+                        _httpWebRequest.KeepAlive = true;
+                        // Allow compression.
+                        _httpWebRequest.Headers.Add("Accept-Encoding: gzip, deflate");
+                        // Set the Accept-Language header.
+                        _httpWebRequest.Headers.Add("Accept-Language: en-US");
+                        // Don't autoredirect: redirects are already logged.
+                        _httpWebRequest.AllowAutoRedirect = false;
+                        // Set the initial content length to 0.
+                        _httpWebRequest.ContentLength = 0;
+                        // Fancy stuff.
+                        _httpWebRequest.ServicePoint.Expect100Continue = false;
+                        _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
                         
-                        int cookieIndex = GetCookieIndex(cookie, _cookieCollection);
-                        if (cookieIndex == -1) {
-                            cookie.Domain = getDestinationHost();
-                            _cookieCollection.Add(cookie);
-                        }
+                        #if DEBUG
+                            _httpWebRequest.Headers.Add("vApus-User: " + System.Threading.Thread.CurrentThread.Name);
+                        #endif
+                        
+                        // EXPERIMENTAL - Allways set KeepAlive header //
+                        //_httpWebRequest.ServicePoint.GetType().GetProperty("HttpBehaviour", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_httpWebRequest.ServicePoint, (byte)0, null);
+                        
+                        #if USECUSTOMHEADERS
+                            foreach (string header in _custom_headers) {
+                                _httpWebRequest.Headers.Add(header);
+                            }
+                        #endif
                     }
-                #endif
-            }
-            
-            private void ApplyPostData() {
-                if (_parameterizedLogEntry[_postData].Value.Length != 0) {
-                    string postData = _parameterizedLogEntry[_postData].Value;
                     
-                    #if USEVIEWSTATE
-                        if (_viewstate_urls.Contains(_parameterizedLogEntry[_relativeUrl].Value) &amp;&amp; _viewstate != string.Empty) {
-                            postData = postData.Replace("@replaceViewstate", _viewstate).Replace("@replaceEventvalidation", _eventvalidation);
+                    private void InitCookies() {
+                        if (_cookieCollection == null) {
+                            _httpWebRequest.CookieContainer = new CookieContainer();
+                            _cookieCollection = new CookieCollection();
+                            _cookieDecoder = new CookieDecoder();
                         }
                         
-                        #elif USEDRUPAL
-                        if (_formtoken_urls.Contains(_parameterizedLogEntry[_relativeUrl].Value) &amp;&amp; _formId != string.Empty &amp;&amp; _formToken != string.Empty) {
-                            postData = postData.Replace("@replaceFormId", _formId).Replace("@replaceFormToken", _formToken);
-                        }
-                        
-                        #elif USECHAMILO
-                        if (_repo_object != string.Empty) {
-                            postData = postData.Replace("@repo_object_length", _repo_object.Length.ToString()).Replace("@repo_object", _repo_object);
-                        }
-                        
-                        // Some custom headers are added when _document_search match is found.
-                        if(_parameterizedLogEntry[_getData].CombineValues() == _document_search) {
-                            _httpWebRequest.Headers.Add("Pragma", "no-cache");
-                        }
-                        #else
-                        //if (_sid != string.Empty) {
-                            //postData = postData.Replace("@replaceSID", _sid);
-                        //}
-                    #endif
-                    
-                    _httpWebRequest.ContentLength = postData.Length;
-                    _httpWebRequest.ContentType = String.IsNullOrEmpty(_parameterizedLogEntry[_contentType].Value) ? "application/x-www-form-urlencoded" : _parameterizedLogEntry[_contentType].Value;
-                    Stream postStream = _httpWebRequest.GetRequestStream();
-                    StreamWriter postStreamWriter = new StreamWriter(postStream);
-                    postStreamWriter.Write(postData);
-                    postStreamWriter.Flush();
-                    
-                    postStreamWriter.Close();
-                    postStreamWriter.Dispose();
-                    postStreamWriter = null;
-                    
-                    postStream.Close();
-                }
-            }
-            
-            private void HandleCookiesBeforeRequest() {
-                #if USECUSTOMCOOKIEPARSER
-                    //Domain for the cookies should be determined here.
-                    string domain = _httpWebRequest.RequestUri.GetLeftPart(UriPartial.Authority);
-                    if(domain.StartsWith("http://")) {
-                        domain = domain.Substring(7);
-                    }
-                    else if(domain.StartsWith("https://")) {
-                        domain = domain.Substring(8);
+                        #if USELOGGEDCOOKIES
+                            foreach (var kvp in _parameterizedLogEntry[_cookies]) {
+                                string key = kvp[0].Value.TrimStart();
+                                string value = ((kvp.Count == 1) ? string.Empty : kvp[1].Value);
+                                Cookie cookie = new Cookie(key, value);
+                                
+                                int cookieIndex = GetCookieIndex(cookie, _cookieCollection);
+                                if (cookieIndex == -1) {
+                                    cookie.Domain = getDestinationHost();
+                                    _cookieCollection.Add(cookie);
+                                }
+                            }
+                        #endif
                     }
                     
-                    // Support for top level domains; we probably don't need this.
-                    // TODO: Should be tested with a URL (not IP) to verify this.
-                    /*
-                        IPAddress ipAddress;
-                        if(!IPAddress.TryParse(authority, out ipAddress)) {
-                            int dotIndex = authority.IndexOf('.');
-                            if (dotIndex != -1 &amp;&amp; dotIndex != authority.Length - 1) {
-                                domain = authority.Substring(dotIndex + 1);
+                    private void ApplyPostData() {
+                        if (_parameterizedLogEntry[_postData].Value.Length != 0) {
+                            string postData = _parameterizedLogEntry[_postData].Value;
+                            
+                            #if USEVIEWSTATE
+                                if (_viewstate_urls.Contains(_parameterizedLogEntry[_relativeUrl].Value) &amp;&amp; _viewstate != string.Empty) {
+                                    postData = postData.Replace("@replaceViewstate", _viewstate).Replace("@replaceEventvalidation", _eventvalidation);
+                                }
+                                
+                                #elif USEDRUPAL
+                                if (_formtoken_urls.Contains(_parameterizedLogEntry[_relativeUrl].Value) &amp;&amp; _formId != string.Empty &amp;&amp; _formToken != string.Empty) {
+                                    postData = postData.Replace("@replaceFormId", _formId).Replace("@replaceFormToken", _formToken);
+                                }
+                                
+                                #elif USECHAMILO
+                                if (_repo_object != string.Empty) {
+                                    postData = postData.Replace("@repo_object_length", _repo_object.Length.ToString()).Replace("@repo_object", _repo_object);
+                                }
+                                
+                                // Some custom headers are added when _document_search match is found.
+                                if(_parameterizedLogEntry[_getData].CombineValues() == _document_search) {
+                                    _httpWebRequest.Headers.Add("Pragma", "no-cache");
+                                }
+                                #else
+                                //if (_sid != string.Empty) {
+                                    //postData = postData.Replace("@replaceSID", _sid);
+                                //}
+                            #endif
+                            
+                            _httpWebRequest.ContentLength = postData.Length;
+                            _httpWebRequest.ContentType = String.IsNullOrEmpty(_parameterizedLogEntry[_contentType].Value) ? "application/x-www-form-urlencoded" : _parameterizedLogEntry[_contentType].Value;
+                            Stream postStream = _httpWebRequest.GetRequestStream();
+                            StreamWriter postStreamWriter = new StreamWriter(postStream);
+                            postStreamWriter.Write(postData);
+                            postStreamWriter.Flush();
+                            
+                            postStreamWriter.Close();
+                            postStreamWriter.Dispose();
+                            postStreamWriter = null;
+                            
+                            postStream.Close();
+                        }
+                    }
+                    
+                    private void HandleCookiesBeforeRequest() {
+                        #if USECUSTOMCOOKIEPARSER
+                            //Domain for the cookies should be determined here.
+                            string domain = _httpWebRequest.RequestUri.GetLeftPart(UriPartial.Authority);
+                            if(domain.StartsWith("http://")) {
+                                domain = domain.Substring(7);
+                            }
+                            else if(domain.StartsWith("https://")) {
+                                domain = domain.Substring(8);
+                            }
+                            
+                            // Support for top level domains; we probably don't need this.
+                            // TODO: Should be tested with a URL (not IP) to verify this.
+                            /*
+                                IPAddress ipAddress;
+                                if(!IPAddress.TryParse(authority, out ipAddress)) {
+                                    int dotIndex = authority.IndexOf('.');
+                                    if (dotIndex != -1 &amp;&amp; dotIndex != authority.Length - 1) {
+                                        domain = authority.Substring(dotIndex + 1);
+                                    }
+                                }
+                            */
+                            
+                            foreach (Cookie cookie in _cookieCollection) {
+                                cookie.Domain = domain;
+                            }
+                        #endif
+                        
+                        _httpWebRequest.CookieContainer = new CookieContainer();
+                        _httpWebRequest.CookieContainer.Add(_cookieCollection);
+                    }
+                    
+                    private void HandleCookiesAfterRequest() {
+                        #if USECUSTOMCOOKIEPARSER
+                            var newCookieCollection = GetCookies(_httpWebResponse.Headers);
+                            var requestCookieCollection = GetCookies(_httpWebRequest.Headers);
+                            #else
+                            var newCookieCollection = _httpWebResponse.Cookies;
+                            var requestCookieCollection = _httpWebRequest.CookieContainer.GetCookies(_httpWebRequest.RequestUri);
+                        #endif
+                        
+                        // Add ASP authentication cookies and old cookies that might be important (better sending too many cookies than too few).
+                        foreach (Cookie cookie in requestCookieCollection) {
+                            if (GetCookieIndex(cookie, newCookieCollection) == -1) {
+                                newCookieCollection.Add(cookie);
                             }
                         }
-                    */
-                    
-                    foreach (Cookie cookie in _cookieCollection) {
-                        cookie.Domain = domain;
-                    }
-                #endif
-                
-                _httpWebRequest.CookieContainer = new CookieContainer();
-                _httpWebRequest.CookieContainer.Add(_cookieCollection);
-            }
-            
-            private void HandleCookiesAfterRequest() {
-                #if USECUSTOMCOOKIEPARSER
-                    var newCookieCollection = GetCookies(_httpWebResponse.Headers);
-                    var requestCookieCollection = GetCookies(_httpWebRequest.Headers);
-                    #else
-                    var newCookieCollection = _httpWebResponse.Cookies;
-                    var requestCookieCollection = _httpWebRequest.CookieContainer.GetCookies(_httpWebRequest.RequestUri);
-                #endif
-                
-                // Add ASP authentication cookies and old cookies that might be important (better sending too many cookies than too few).
-                foreach (Cookie cookie in requestCookieCollection) {
-                    if (GetCookieIndex(cookie, newCookieCollection) == -1) {
-                        newCookieCollection.Add(cookie);
-                    }
-                }
-                // Copy the cached cookies that are not yet in the collection, the check happens on the name of the cookie.
-                foreach (Cookie cookie in _cookieCollection) {
-                    if (GetCookieIndex(cookie, newCookieCollection) == -1) {
-                        newCookieCollection.Add(cookie);
-                    }
-                }
-                _cookieCollection = newCookieCollection;
-            }
-            
-            private int GetCookieIndex(Cookie cookie, CookieCollection cookieCollection) {
-                for (int i = 0; i &lt; cookieCollection.Count; i++) {
-                    if (cookieCollection[i].Name == cookie.Name) {
-                        return i;
-                    }
-                }
-                return -1;
-            }
-            
-            private CookieCollection GetCookies(WebHeaderCollection headers) {
-                var cookieCollection = new CookieCollection();
-                foreach (string headerName in headers.Keys) {
-                    string lowerheaderName = headerName.ToLower();
-                    if (lowerheaderName == "set-cookie" || lowerheaderName == "cookie") {
-                        foreach (Cookie cookie in _cookieDecoder.Decode(headers[headerName])) {
-                            int cookieIndex = GetCookieIndex(cookie, cookieCollection);
-                            if (cookieIndex == -1) {
-                                cookieCollection.Add(cookie);
-                            }
-                            else {
-                                cookieCollection[cookieIndex].Value = cookie.Value;
+                        // Copy the cached cookies that are not yet in the collection, the check happens on the name of the cookie.
+                        foreach (Cookie cookie in _cookieCollection) {
+                            if (GetCookieIndex(cookie, newCookieCollection) == -1) {
+                                newCookieCollection.Add(cookie);
                             }
                         }
+                        _cookieCollection = newCookieCollection;
                     }
-                }
-                return cookieCollection;
-            }
+                    
+                    private int GetCookieIndex(Cookie cookie, CookieCollection cookieCollection) {
+                        for (int i = 0; i &lt; cookieCollection.Count; i++) {
+                            if (cookieCollection[i].Name == cookie.Name) {
+                                return i;
+                            }
+                        }
+                        return -1;
+                    }
+                    
+                    private CookieCollection GetCookies(WebHeaderCollection headers) {
+                        var cookieCollection = new CookieCollection();
+                        foreach (string headerName in headers.Keys) {
+                            string lowerheaderName = headerName.ToLower();
+                            if (lowerheaderName == "set-cookie" || lowerheaderName == "cookie") {
+                                foreach (Cookie cookie in _cookieDecoder.Decode(headers[headerName])) {
+                                    int cookieIndex = GetCookieIndex(cookie, cookieCollection);
+                                    if (cookieIndex == -1) {
+                                        cookieCollection.Add(cookie);
+                                    }
+                                    else {
+                                        cookieCollection[cookieIndex].Value = cookie.Value;
+                                    }
+                                }
+                            }
+                        }
+                        return cookieCollection;
+                    }
+                    
+                    private string getDestinationHost() {
+                        #if USEMULTICONNECTION
+                            return _parameterizedLogEntry[_destinationHost].Value;
+                            #else
+                            return _connectionProxySyntaxItem0;
+                        #endif
+                    }
+                    
+                    //private string getStringBetween(string s, string before, string after) {
+                        //s = s.Substring(s.IndexOf(before, StringComparison.InvariantCultureIgnoreCase) + before.Length);
+                        //int endIndex = s.IndexOf(after, StringComparison.InvariantCultureIgnoreCase);
+                        //return s.Substring(0, endIndex);
+                    //}
+                    
+                    // Downloads the full response and returns the page.
+                    // If discard is set (default), the response will be buffered in small blocks and discarded.
+                    // If we want to keep the full response for parsing, set discard = false.
+                    private string DownloadResponse(bool discard = true) {
+                        if (discard) {
+                            do {
+                                _count = _streamReader.Read(_buffer, 0, 1024);
+                            } while (_count != 0);
+                        }
+                        else {
+                            return _streamReader.ReadToEnd();
+                        }
+                        
+                        return string.Empty;
+                    }
+                #endregion // Free Coding
+            } // ConnectionProxy
             
-            private string getDestinationHost() {
-                #if USEMULTICONNECTION
-                    return _parameterizedLogEntry[_destinationHost].Value;
-                    #else
-                    return _connectionProxySyntaxItem0;
-                #endif
-            }
-            
-            //private string getStringBetween(string s, string before, string after) {
-                //s = s.Substring(s.IndexOf(before, StringComparison.InvariantCultureIgnoreCase) + before.Length);
-                //int endIndex = s.IndexOf(after, StringComparison.InvariantCultureIgnoreCase);
-                //return s.Substring(0, endIndex);
-            //}
-            
-            // Downloads the full response and returns the page.
-            // If discard is set (default), the response will be buffered in small blocks and discarded.
-            // If we want to keep the full response for parsing, set discard = false.
-            private string DownloadResponse(bool discard = true) {
-                if (discard) {
-                    do {
-                        _count = _streamReader.Read(_buffer, 0, 1024);
-                    } while (_count != 0);
+            public static class StringExtensions {
+                public  static string GetStringBetween(this string s, string before, string after) {
+                    s = s.Substring(s.IndexOf(before, StringComparison.InvariantCultureIgnoreCase) + before.Length);
+                    int endIndex = s.IndexOf(after, StringComparison.InvariantCultureIgnoreCase);
+                    return s.Substring(0, endIndex);
                 }
-                else {
-                    return _streamReader.ReadToEnd();
-                }
-                
-                return string.Empty;
-            }
-        #endregion // Free Coding
-    } // ConnectionProxy
-    
-    public static class StringExtensions {
-        public  static string GetStringBetween(this string s, string before, string after) {
-            s = s.Substring(s.IndexOf(before, StringComparison.InvariantCultureIgnoreCase) + before.Length);
-            int endIndex = s.IndexOf(after, StringComparison.InvariantCultureIgnoreCase);
-            return s.Substring(0, endIndex);
-        }
-    } // StringExtensions
-    
-} // vApus.Stresstest</Code>
+            } // StringExtensions
+            
+        } // vApus.Stresstest</Code>
           <ShowInGui>True</ShowInGui>
           <IsDefaultItem>False</IsDefaultItem>
           <IsEmpty>False</IsEmpty>

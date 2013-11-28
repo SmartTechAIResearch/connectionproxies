@@ -150,7 +150,7 @@
     //
     // Further in code:
     // #if NOTMUCHUSEDFEATURE
-    // do stuff...
+        // do stuff...
     // #endif
 #endregion // Preprocessors
 
@@ -176,12 +176,12 @@ namespace vApus.Stresstest {
             // Please do not edit the following lines (RuleSetFields).
             // -- RuleSetFields --
             System.String _connectionProxySyntaxItem0 = string.Empty; // Server
-            System.Int32 _connectionProxySyntaxItem1; // Port
+            System.Int32 _connectionProxySyntaxItem1 = 1433; // Port [The default value for this syntax item is used if no value is provided in the connection.]
             System.String _connectionProxySyntaxItem2 = string.Empty; // Database
             System.String _connectionProxySyntaxItem3 = string.Empty; // User ID
             System.String _connectionProxySyntaxItem4 = string.Empty; // Password
-            System.Boolean _connectionProxySyntaxItem5; // Pooling
-            System.String _connectionProxySyntaxItem6 = string.Empty; // Network Library
+            System.Boolean _connectionProxySyntaxItem5 = false; // Pooling [The default value for this syntax item is used if no value is provided in the connection.]
+            System.String _connectionProxySyntaxItem6 = "dbmssocn"; // Network Library [The default value for this syntax item is used if no value is provided in the connection.]
             // -- RuleSetFields --
             
             //
@@ -304,10 +304,9 @@ namespace vApus.Stresstest {
                 if (!_isDisposed) {
                     _isDisposed = true;
                     try{
-                                    // Timeout asap.
-                                    _command.CommandTimeout = 1;
-            }catch{
-                }
+                        // Timeout asap.
+                        _command.Cancel();
+                    } catch{}
                     CloseConnection();
                     _connection.Dispose();
                     _connection = null;

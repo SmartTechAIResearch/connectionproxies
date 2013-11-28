@@ -306,129 +306,124 @@ namespace vApus.Stresstest {
                 if (!_isDisposed) {
                     _isDisposed = true;
                     try {
-                        // timeout immediately.
-                        _httpWebRequest.Timeout= 1;
-                        _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
-                        }catch{
-                    }
-                    _httpWebRequest = null;
-                    _httpWebResponse = null;
-                    _cookies = null;
-                    if (_streamReader != null) {
-                        try {
-                            _streamReader.Close();
-                            _streamReader.Dispose();
-                            _streamReader = null;
-                        }
-                        catch {
+                        // Timeout immediately.
+                        _httpWebRequest.Abort();
+                        } catch {}
+                        _httpWebRequest = null;
+                        _httpWebResponse = null;
+                        if (_streamReader != null) {
+                            try {
+                                _streamReader.Close();
+                                _streamReader.Dispose();
+                                _streamReader = null;
+                                } catch {}
+                            }
                         }
                     }
-                }
-            }
-        #endregion // Functions
-        
-        #region Free Coding
-            private byte[] ParseLogEntryToBytes(string s) {
-                string[] array = s.Split(',');
-                byte[] bytes = new byte[array.Length];
+                #endregion // Functions
                 
-                for (int i = 0; i &lt; array.Length; i++) {
-                    bytes[i] = (byte)int.Parse(array[i]);
-                }
-                
-                return bytes;
-            }
-            
-            // Following two fx's can be used for a parameterizing solution in the connection proxy code.
-            private byte[] RemoveAt(byte[] source, int index, int count) {
-                var newB = new List&lt;Byte&gt;(index + 1);
-                int exclusiveLastIndex = index + count;
-                for (int i = 0; i &lt; source.Length; i++) {
-                    if (i &lt; index || i &gt; exclusiveLastIndex) {
-                        newB.Add(source[i]);
-                    }
-                }
-                return newB.ToArray();
-            }
-            
-            // Replaces the bytes at the given index with the bytes of s.
-            private byte[] InsertAt(byte[] source, int index, string s) {
-                byte[] toInsert = System.Text.Encoding.Default.GetBytes(s);
-                var newB = new List&lt;Byte&gt;(source.Length + toInsert.Length);
-                for (int i = 0; i &lt; index; i++) {
-                    if (i &gt;= source.Length) {
-                        break;
-                    }
-                    newB.Add(source[i]);
-                }
-                newB.AddRange(toInsert);
-                for (int i = index; i &lt; source.Length; i++) {
-                    newB.Add(source[i]);
-                }
-                return newB.ToArray();
-            }
-            
-            private void InitHttpWebRequest(int contentLength) {
-                _httpWebRequest = HttpWebRequest.Create(_connectionProxySyntaxItem0) as HttpWebRequest;
-                _httpWebRequest.UserAgent = "vApus - " + GetHashCode();
-                _httpWebRequest.Timeout = 60000;
-                _httpWebRequest.AllowAutoRedirect = false;
-                _httpWebRequest.ServicePoint.Expect100Continue = false;
-                
-                _httpWebRequest.ServicePoint.ConnectionLimit =  (this.GetParent() as ConnectionProxyPool).PoolSize;
-                
-                _httpWebRequest.Method = "POST";
-                _httpWebRequest.ContentLength = contentLength;
-                
-                // Default: "application/x-www-form-urlencoded"
-                _httpWebRequest.ContentType = _connectionProxySyntaxItem1;
-            }
-            
-            private void HandleCookiesBeforeRequest() {
-                if (_cookies == null) {
-                    _cookies = new CookieCollection();
-                }
-                _httpWebRequest.CookieContainer = new CookieContainer();
-                _httpWebRequest.CookieContainer.Add(_cookies);
-            }
-            
-            private void HandleCookiesAfterRequest() {
-                if (_httpWebRequest.CookieContainer.Count &gt; 0) {
-                    foreach (Cookie cookie in _httpWebRequest.CookieContainer.GetCookies(_httpWebRequest.RequestUri)) {
-                        int cookieIndex = GetCookieIndex(cookie.Name);
-                        if (cookieIndex == -1) {
-                            _cookies.Add(cookie);
+                #region Free Coding
+                    private byte[] ParseLogEntryToBytes(string s) {
+                        string[] array = s.Split(',');
+                        byte[] bytes = new byte[array.Length];
+                        
+                        for (int i = 0; i &lt; array.Length; i++) {
+                            bytes[i] = (byte)int.Parse(array[i]);
                         }
-                        else {
-                            _cookies[cookieIndex].Value = cookie.Value;
-                        }
+                        
+                        return bytes;
                     }
-                }
-                if (_httpWebResponse.Cookies.Count &gt; 0) {
-                    foreach (Cookie cookie in _httpWebResponse.Cookies) {
-                        int cookieIndex = GetCookieIndex(cookie.Name);
-                        if (cookieIndex == -1) {
-                            _cookies.Add(cookie);
+                    
+                    // Following two fx's can be used for a parameterizing solution in the connection proxy code.
+                    private byte[] RemoveAt(byte[] source, int index, int count) {
+                        var newB = new List&lt;Byte&gt;(index + 1);
+                        int exclusiveLastIndex = index + count;
+                        for (int i = 0; i &lt; source.Length; i++) {
+                            if (i &lt; index || i &gt; exclusiveLastIndex) {
+                                newB.Add(source[i]);
+                            }
                         }
-                        else {
-                            _cookies[cookieIndex].Value = cookie.Value;
+                        return newB.ToArray();
+                    }
+                    
+                    // Replaces the bytes at the given index with the bytes of s.
+                    private byte[] InsertAt(byte[] source, int index, string s) {
+                        byte[] toInsert = System.Text.Encoding.Default.GetBytes(s);
+                        var newB = new List&lt;Byte&gt;(source.Length + toInsert.Length);
+                        for (int i = 0; i &lt; index; i++) {
+                            if (i &gt;= source.Length) {
+                                break;
+                            }
+                            newB.Add(source[i]);
+                        }
+                        newB.AddRange(toInsert);
+                        for (int i = index; i &lt; source.Length; i++) {
+                            newB.Add(source[i]);
+                        }
+                        return newB.ToArray();
+                    }
+                    
+                    private void InitHttpWebRequest(int contentLength) {
+                        _httpWebRequest = HttpWebRequest.Create(_connectionProxySyntaxItem0) as HttpWebRequest;
+                        _httpWebRequest.UserAgent = "vApus - " + GetHashCode();
+                        _httpWebRequest.Timeout = 60000;
+                        _httpWebRequest.AllowAutoRedirect = false;
+                        _httpWebRequest.ServicePoint.Expect100Continue = false;
+                        
+                        _httpWebRequest.ServicePoint.ConnectionLimit =  (this.GetParent() as ConnectionProxyPool).PoolSize;
+                        
+                        _httpWebRequest.Method = "POST";
+                        _httpWebRequest.ContentLength = contentLength;
+                        
+                        // Default: "application/x-www-form-urlencoded"
+                        _httpWebRequest.ContentType = _connectionProxySyntaxItem1;
+                    }
+                    
+                    private void HandleCookiesBeforeRequest() {
+                        if (_cookies == null) {
+                            _cookies = new CookieCollection();
+                        }
+                        _httpWebRequest.CookieContainer = new CookieContainer();
+                        _httpWebRequest.CookieContainer.Add(_cookies);
+                    }
+                    
+                    private void HandleCookiesAfterRequest() {
+                        if (_httpWebRequest.CookieContainer.Count &gt; 0) {
+                            foreach (Cookie cookie in _httpWebRequest.CookieContainer.GetCookies(_httpWebRequest.RequestUri)) {
+                                int cookieIndex = GetCookieIndex(cookie.Name);
+                                if (cookieIndex == -1) {
+                                    _cookies.Add(cookie);
+                                }
+                                else {
+                                    _cookies[cookieIndex].Value = cookie.Value;
+                                }
+                            }
+                        }
+                        if (_httpWebResponse.Cookies.Count &gt; 0) {
+                            foreach (Cookie cookie in _httpWebResponse.Cookies) {
+                                int cookieIndex = GetCookieIndex(cookie.Name);
+                                if (cookieIndex == -1) {
+                                    _cookies.Add(cookie);
+                                }
+                                else {
+                                    _cookies[cookieIndex].Value = cookie.Value;
+                                }
+                            }
+                            
                         }
                     }
                     
-                }
-            }
-            
-            private int GetCookieIndex(string cookieName) {
-                for (int i = 0; i &lt; _cookies.Count; i++) {
-                    if (_cookies[i].Name == cookieName) {
-                        return i;
+                    private int GetCookieIndex(string cookieName) {
+                        for (int i = 0; i &lt; _cookies.Count; i++) {
+                            if (_cookies[i].Name == cookieName) {
+                                return i;
+                            }
+                        }
+                        return -1;
                     }
-                }
-                return -1;
-            }
-        #endregion // Free Coding
-    } // ConnectionProxy
-} // vApus.Stresstest</Code>
+                #endregion // Free Coding
+            } // ConnectionProxy
+        } // vApus.Stresstest</Code>
           <ShowInGui>True</ShowInGui>
           <IsDefaultItem>False</IsDefaultItem>
           <IsEmpty>False</IsEmpty>
