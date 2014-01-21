@@ -88,8 +88,10 @@
     // Here you can put your own usings under the default ones.
     //
     using System.IO;
-    using System.Net;
-    using System.Collections.Generic;
+    using System.Net;    
+    using System.Net.Security;
+    using System.Collections.Generic;    
+    using System.Security.Cryptography.X509Certificates;
 #endregion // Usings
 
 namespace vApus.Stresstest {
@@ -129,7 +131,8 @@ namespace vApus.Stresstest {
         #endregion // Properties
         
         public ConnectionProxy() {
-            
+            // Trust all certificates for https testing.
+            ServicePointManager.ServerCertificateValidationCallback = (object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors errors) =&gt; { return true; };
         }
         
         #region Functions
@@ -429,7 +432,7 @@ namespace vApus.Stresstest {
           <IsEmpty>False</IsEmpty>
         </ConnectionProxyCode>
       </Items>
-      <Label>HTTP Binary POST @BRANCH@-@TM@</Label>
+      <Label>HTTP(S) Binary POST @BRANCH@-@TM@</Label>
       <ShowInGui>True</ShowInGui>
       <IsDefaultItem>False</IsDefaultItem>
       <IsEmpty>False</IsEmpty>
