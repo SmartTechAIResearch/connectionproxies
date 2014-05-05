@@ -117,6 +117,9 @@
     // Chamilo preprocessor. More (Dutch) explanation in HTTP_CHAMILO_README.txt.
     //#define USECHAMILO
     
+    // PHPBB example preprocessor.
+    //#define USEPHPBB
+    
     // Set the logged Referer HTTP header in requests.
     //#define USEREFERER
     
@@ -205,8 +208,9 @@ namespace vApus.Stresstest {
             #endif
             
             // Example of a custom sting you need extracted and inserted in GET and/or POST data (usually an ID of some sort).
-            // Throughout this connection proxy are blocks of example code commented for this specific usage.
-            //string _sid = string.Empty;
+            #if USEPHPBB
+                string _sid = string.Empty;
+            #endif
         #endregion // Fields
         
         #region Properties
@@ -245,6 +249,9 @@ namespace vApus.Stresstest {
                 #endif
                 #if USECHAMILO
                     EventPanel.AddEvent("  USECHAMILO");
+                #endif
+                #if USEPHPBB
+                    EventPanel.AddEvent("  USEPHPBB");
                 #endif
                 #if USEREFERER
                     EventPanel.AddEvent("  USEREFERER");
@@ -382,7 +389,6 @@ namespace vApus.Stresstest {
                         //
                         
                         #if USEVIEWSTATE
-                            
                             string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
                             string method = _parameterizedLogEntry[_requestMethod].Value;
                             
@@ -437,6 +443,8 @@ namespace vApus.Stresstest {
                             string getData = _parameterizedLogEntry[_getData].CombineValues();
                             string location = _httpWebResponse.GetResponseHeader("Location");
                             
+                            DownloadResponse(); // Discard response while it gets downloaded
+                            
                             // Here the _calendar_search is used to try and extract the _repo_object from the response's location header.
                             if (relUrl.StartsWith("/chamilo/index.php") &amp;&amp; getData == _calendar_search) {
                                 if (! string.IsNullOrEmpty(location)) {
@@ -456,6 +464,7 @@ namespace vApus.Stresstest {
                             
                             #else
                             DownloadResponse(); // Discard response while it gets downloaded
+                            
                         #endif
                         
                         HandleCookiesAfterRequest();
@@ -465,15 +474,16 @@ namespace vApus.Stresstest {
                         //    Put your code for cookie data extraction here.
                         //
                         
-                        //if (_parameterizedLogEntry[_relativeUrl].Value == "/index.php" || _parameterizedLogEntry[_relativeUrl].Value == "/ucp.php") {
-                            //var query = HttpUtility.ParseQueryString(_httpWebResponse.GetResponseHeader("Location"));
-                            //_some_var = query["some_query"];
-                            //_sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
-                            //
-                            //#if DEBUG
-                                //EventPanel.AddEvent("_sid: " + _sid);
-                            //#endif
-                        //}
+                        #if USEPHPBB
+                            if (_parameterizedLogEntry[_relativeUrl].Value == "/index.php" || _parameterizedLogEntry[_relativeUrl].Value == "/ucp.php") {
+                                _sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
+                                
+                                #if DEBUG
+                                    EventPanel.AddEvent("USEPHPBB"
+                                    + "\n _sid: " + _sid);
+                                #endif
+                            }
+                        #endif
                     }
                     catch (Exception ex) {
                         exception = ex;
@@ -534,7 +544,7 @@ namespace vApus.Stresstest {
                     }
                 #endregion // Functions
                 
-                #region Free Coding                    
+                #region Free Coding
                     private void InitHttpWebRequest() {
                         string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
                         string getData = _parameterizedLogEntry[_getData].CombineValues();
@@ -548,16 +558,16 @@ namespace vApus.Stresstest {
                         
                         // GetData changes.
                         #if USECHAMILO
-                            if(getData.Length != 0 &amp;&amp; _repo_object != string.Empty) {
+                            if(getData.Length != 0) {
                                 getData = "?" + getData.Replace("@repo_object", _repo_object);
                             }
-                            
+                            #elif USEPHPBB
+                            if(getData.Length != 0) {
+                                getData = "?" + getData.Replace("@replaceSID", _sid);
+                            }
                             #else
                             if(getData.Length != 0) {
-                                getData = "?" + getData; 
-                                //if(_sid != string.Empty) {
-                                    //getData = getData.Replace("@replaceSID", _sid);
-                                //}
+                                getData = "?" + getData;
                             }
                         #endif
                         
@@ -646,13 +656,17 @@ namespace vApus.Stresstest {
                                 }
                                 
                                 // Some custom headers are added when _document_search match is found.
-                                if(_parameterizedLogEntry[_getData].CombineValues() == _document_search) {
+                                if (_parameterizedLogEntry[_getData].CombineValues() == _document_search) {
                                     _httpWebRequest.Headers.Add("Pragma", "no-cache");
                                 }
+                                
+                                #elif USEPHPBB
+                                if (_sid != string.Empty) {
+                                    postData = postData.Replace("@replaceSID", _sid);
+                                }
+                                
                                 #else
-                                //if (_sid != string.Empty) {
-                                    //postData = postData.Replace("@replaceSID", _sid);
-                                //}
+                                
                             #endif
                             
                             _httpWebRequest.ContentLength = postData.Length;
@@ -800,7 +814,7 @@ namespace vApus.Stresstest {
           <IsEmpty>False</IsEmpty>
         </ConnectionProxyCode>
       </Items>
-      <Label>HTTP(S)/Chamilo/Drupal/PHPBB @BRANCH@-@TM@</Label>
+      <Label>HTTP(S) @BRANCH@-@TM@</Label>
       <ShowInGui>True</ShowInGui>
       <IsDefaultItem>False</IsDefaultItem>
       <IsEmpty>False</IsEmpty>
