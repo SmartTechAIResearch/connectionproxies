@@ -306,26 +306,27 @@ namespace vApus.Stresstest {
                     try{
                         // Timeout asap.
                         _command.Cancel();
-                    } catch{}
-                    CloseConnection();
-                    _connection.Dispose();
-                    _connection = null;
-                    _command.Dispose();
-                    _command = null;
-                    if(_reader != null)
-                    _reader.Close();
-                    _reader = null;
+                        } catch{}
+                        // #672: Disable CloseConnection() in Dispose()
+                        //CloseConnection();
+                        _connection.Dispose();
+                        _connection = null;
+                        _command.Dispose();
+                        _command = null;
+                        if(_reader != null)
+                        _reader.Close();
+                        _reader = null;
+                    }
                 }
-            }
-        #endregion //Functions
-        
-        #region Free Coding
-            //
-            // Anything you want
-            //
-        #endregion // Free Coding
-    } // ConnectionProxy
-} // vApus.Stresstest</Code>
+            #endregion //Functions
+            
+            #region Free Coding
+                //
+                // Anything you want
+                //
+            #endregion // Free Coding
+        } // ConnectionProxy
+    } // vApus.Stresstest</Code>
           <ShowInGui>True</ShowInGui>
           <IsDefaultItem>False</IsDefaultItem>
           <IsEmpty>False</IsEmpty>

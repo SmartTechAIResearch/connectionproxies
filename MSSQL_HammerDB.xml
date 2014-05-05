@@ -140,7 +140,7 @@
     
     Note: If you want to edit this connection proxy code you need to know what you are doing. You might break your stresstest.
     
-    VERSION NIGHTLY-20130624110218
+    VERSION @BRANCH@-@TM@
     
     HammerDB GPLv2 http://www.gnu.org/licenses/gpl-2.0.html
 */
@@ -356,7 +356,8 @@ namespace vApus.Stresstest {
                         _command.CommandTimeout = 1;
                         }catch{
                     }
-                    CloseConnection();
+                    // #672: Disable CloseConnection() in Dispose()
+                    //CloseConnection();
                     _connection.Dispose();
                     _connection = null;
                     _command.Dispose();
@@ -524,7 +525,7 @@ namespace vApus.Stresstest {
           <IsEmpty>False</IsEmpty>
         </ConnectionProxyCode>
       </Items>
-      <Label>MSSQL HammerDB TPC-C @BRANCH@-@TM@</Label>
+      <Label>MSSQL HammerDB @BRANCH@-@TM@</Label>
       <ShowInGui>True</ShowInGui>
       <IsDefaultItem>False</IsDefaultItem>
       <IsEmpty>False</IsEmpty>
