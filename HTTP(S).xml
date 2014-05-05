@@ -24,7 +24,7 @@
               </Items>
               <DefaultValue>
               </DefaultValue>
-              <Description>Provide the hostname, an IPv4 address, or an IPv6 address enclosed in "[ ]". Examples: www.cooldomain.com, 192.168.2.3 or [2001:db8:85a3:8d3:1319:8a2e:370:7348]</Description>
+              <Description>Provide the hostname, an IPv4 address, or an IPv6 address enclosed in "[ ]". Examples: www.cooldomain.com, 192.168.2.3 or [2001:db8:85a3:8d3:1319:8a2e:370:7348]. This value is overriden with the log's value when #MULTICONNECTION is used.</Description>
               <Label>Host</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
@@ -49,8 +49,33 @@
                 </Rule>
               </Items>
               <DefaultValue>http</DefaultValue>
-              <Description>Fill in https for example. If nothing is filled in, http is used.</Description>
+              <Description>Fill in https for example. If nothing is filled in, http is used. This value is overriden with the log's value when #MULTICONNECTION is used.</Description>
               <Label>Protocol</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items>
+                <Rule>
+                  <Items />
+                  <RegExp>
+                  </RegExp>
+                  <IgnoreCase>False</IgnoreCase>
+                  <ValueType>ushortType</ValueType>
+                  <UsePasswordChar>False</UsePasswordChar>
+                  <Description>
+                  </Description>
+                  <Label>
+                  </Label>
+                  <ShowInGui>True</ShowInGui>
+                  <IsDefaultItem>False</IsDefaultItem>
+                  <IsEmpty>False</IsEmpty>
+                </Rule>
+              </Items>
+              <DefaultValue>80</DefaultValue>
+              <Description>Port used to connect to the webserver.By default this is set to 80. Beware to update the used port to match the protocol. This value is overriden with the log's value when #MULTICONNECTION is used.</Description>
+              <Label>Port</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
               <IsEmpty>False</IsEmpty>
@@ -84,10 +109,6 @@
     // Enable DEBUG mode
     //#define DEBUG
     
-    // Use this preprocessor if you want to use the logged cookies. This will discard any cookies set by the server during
-    // the test and only use those that are specified in the Log.
-    //#define USELOGGEDCOOKIES
-    
     // This preprocessor disabes .NET's own cookieparser and uses our own implementation instead. This should only be used when
     // the cookiedomain is different than the used Connection, when cookies from another domain are discarded. For example a
     // website sets its cookiedomain to ".cooldomain.com" but for testing we use a plain IP as Connection. In this case .NET
@@ -106,7 +127,7 @@
     // ASP.NET websites usually use "viewstates" when submitting forms. Use the following preprocessor if this is the case.
     // When using this preprocessor, don't forget to set the _viewstate_urls array in "Custom Fields" and replace logged
     // viewstates and eventvalidations in your Log by the @replaceViewstate and @replaceEventvalidation tokens.
-    //#define USEVIEWSTATE
+    //#define USEASPNET
     
     // Drupal websites usually use "formtokens" when submitting forms. Use the following preprocessor if this is the case.
     // When using this preprocessor, don't forget to set the _formtoken_urls array in "Custom Fields" and replace logged
@@ -161,6 +182,7 @@ namespace vApus.Stresstest {
             // -- RuleSetFields --
             System.String _connectionProxySyntaxItem0 = string.Empty; // Host
             System.String _connectionProxySyntaxItem1 = "http"; // Protocol [The default value for this syntax item is used if no value is provided in the connection.]
+            System.UInt16 _connectionProxySyntaxItem2 = 80; // Port [The default value for this syntax item is used if no value is provided in the connection.]
             // -- RuleSetFields --
             
             StringTree _parameterizedLogEntry;
@@ -178,9 +200,9 @@ namespace vApus.Stresstest {
             //    Custom variables.
             //
             
-            // This parameter is used in combination with the USEVIEWSTATE preprocessor. This array defines the relative URLs
+            // This parameter is used in combination with the USEASPNET preprocessor. This array defines the relative URLs
             // where a viewstate can be extracted.
-            #if USEVIEWSTATE
+            #if USEASPNET
                 string [] _viewstate_urls = { "/Default.aspx" };
                 string _viewstate = string.Empty, _eventvalidation = string.Empty;
             #endif
@@ -241,8 +263,8 @@ namespace vApus.Stresstest {
                 #if USEMULTICONNECTION
                     EventPanel.AddEvent("  USEMULTICONNECTION");
                 #endif
-                #if USEVIEWSTATE
-                    EventPanel.AddEvent("  USEVIEWSTATE");
+                #if USEASPNET
+                    EventPanel.AddEvent("  USEASPNET");
                 #endif
                 #if USEDRUPAL
                     EventPanel.AddEvent("  USEDRUPAL");
@@ -388,7 +410,7 @@ namespace vApus.Stresstest {
                         //    Before making any changes, please understand the workings of the Connection Proxy or ask help.
                         //
                         
-                        #if USEVIEWSTATE
+                        #if USEASPNET
                             string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
                             string method = _parameterizedLogEntry[_requestMethod].Value;
                             
@@ -402,11 +424,11 @@ namespace vApus.Stresstest {
                             }
                             
                             #if DEBUG
-                                EventPanel.AddEvent("USEVIEWSTATE"
+                                EventPanel.AddEvent("USEASPNET"
                                 + "\n  relUrl: " + relUrl
                                 + "\n  method: " + method
                                 + "\n  viewstate: " + _viewstate
-                                + "\n  eventvalidation: " + _eventvalidation;
+                                + "\n  eventvalidation: " + _eventvalidation);
                             #endif
                             
                             #elif USEDRUPAL
@@ -476,7 +498,13 @@ namespace vApus.Stresstest {
                         
                         #if USEPHPBB
                             if (_parameterizedLogEntry[_relativeUrl].Value == "/index.php" || _parameterizedLogEntry[_relativeUrl].Value == "/ucp.php") {
-                                _sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
+                                try {
+                                    _sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
+                                    } catch (Exception ex) {
+                                    string msg = "USEPHPBB: Can't extract SID cookie!";
+                                    EventPanel.AddEvent(msg + "\n" + ex.Message);
+                                    throw new Exception(msg, ex);
+                                }
                                 
                                 #if DEBUG
                                     EventPanel.AddEvent("USEPHPBB"
@@ -571,9 +599,9 @@ namespace vApus.Stresstest {
                             }
                         #endif
                         
+                        Destination dest = GetDestination();
                         _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}://{1}:{2}{3}{4}",
-                        _parameterizedLogEntry[_protocol].Value, getDestinationHost(), _parameterizedLogEntry[_destinationPort].Value,
-                        relUrl, getData)));
+                        dest.Protocol, dest.Host, dest.Port, relUrl, getData)));
                         
                         // Set the HTTP request method (GET/POST).
                         _httpWebRequest.Method = _parameterizedLogEntry[_requestMethod].Value;
@@ -620,27 +648,13 @@ namespace vApus.Stresstest {
                             _cookieCollection = new CookieCollection();
                             _cookieDecoder = new CookieDecoder();
                         }
-                        
-                        #if USELOGGEDCOOKIES
-                            foreach (var kvp in _parameterizedLogEntry[_cookies]) {
-                                string key = kvp[0].Value.TrimStart();
-                                string value = ((kvp.Count == 1) ? string.Empty : kvp[1].Value);
-                                Cookie cookie = new Cookie(key, value);
-                                
-                                int cookieIndex = GetCookieIndex(cookie, _cookieCollection);
-                                if (cookieIndex == -1) {
-                                    cookie.Domain = getDestinationHost();
-                                    _cookieCollection.Add(cookie);
-                                }
-                            }
-                        #endif
                     }
                     
                     private void ApplyPostData() {
                         if (_parameterizedLogEntry[_postData].Value.Length != 0) {
                             string postData = _parameterizedLogEntry[_postData].Value;
                             
-                            #if USEVIEWSTATE
+                            #if USEASPNET
                                 if (_viewstate_urls.Contains(_parameterizedLogEntry[_relativeUrl].Value) &amp;&amp; _viewstate != string.Empty) {
                                     postData = postData.Replace("@replaceViewstate", _viewstate).Replace("@replaceEventvalidation", _eventvalidation);
                                 }
@@ -768,11 +782,11 @@ namespace vApus.Stresstest {
                         return cookieCollection;
                     }
                     
-                    private string getDestinationHost() {
+                    private Destination GetDestination() {
                         #if USEMULTICONNECTION
-                            return _parameterizedLogEntry[_destinationHost].Value;
+                            return new Destination() { Protocol = _parameterizedLogEntry[_protocol].Value, Host = _parameterizedLogEntry[_destinationHost].Value , Port = _parameterizedLogEntry[_destinationPort].Value };
                             #else
-                            return _connectionProxySyntaxItem0;
+                            return new Destination() { Protocol = _connectionProxySyntaxItem1, Host = _connectionProxySyntaxItem0, Port = _connectionProxySyntaxItem2.ToString() };
                         #endif
                     }
                     
@@ -796,6 +810,10 @@ namespace vApus.Stresstest {
                         }
                         
                         return string.Empty;
+                    }
+                    
+                    private struct Destination {
+                        public string Protocol, Host, Port;
                     }
                 #endregion // Free Coding
             } // ConnectionProxy
