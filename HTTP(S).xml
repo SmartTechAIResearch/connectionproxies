@@ -136,7 +136,7 @@
     //#define USEDRUPAL
     
     // Chamilo preprocessor. More (Dutch) explanation in HTTP_CHAMILO_README.txt.
-    //#define USECHAMILO
+    #define USECHAMILO
     
     // PHPBB example preprocessor.
     //#define USEPHPBB
@@ -218,9 +218,11 @@ namespace vApus.Stresstest {
             // This parameter is used in combination with the USECHAMILO preprocessor. Define the search strings (GETDATA) from
             // the requests where to extract _repo_object in the location header of the response.
             #if USECHAMILO
-                string _calendar_search = "application=personal_calendar&amp;go=publisher&amp;repoviewer_action=creator&amp;content_object_type=calendar_event";
-                string _document_search = "renderer=table&amp;tab=category&amp;application=repository&amp;go=creator&amp;content_object_type=document";
+                string [] _repoobject_urls = { "/index.php" };
+                string _calendar_search = "application=personal_calendar&amp;go=publisher&amp;viewer_action=creator&amp;content_object_type=repository%5Ccontent_object%5Ccalendar_event%5CCalendarEvent";
                 string _repo_object = string.Empty;
+                string _cas_ticket = string.Empty;
+                string _cas_ticket_redirect = string.Empty;
             #endif
             
             // This parameter is used in combination with the USECUSTOMHEADERS preprocessor. This array defines custom HTTP
@@ -431,7 +433,7 @@ namespace vApus.Stresstest {
                                 + "\n  eventvalidation: " + _eventvalidation);
                             #endif
                             
-                            #elif USEDRUPAL
+                        #elif USEDRUPAL
                             string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
                             string method = _parameterizedLogEntry[_requestMethod].Value;
                             string location = _httpWebResponse.GetResponseHeader("Location");
@@ -459,7 +461,7 @@ namespace vApus.Stresstest {
                                 + "\n  redirectnode: " + _redirectNode);
                             #endif
                             
-                            #elif USECHAMILO
+                        #elif USECHAMILO
                             string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
                             string method = _parameterizedLogEntry[_requestMethod].Value;
                             string getData = _parameterizedLogEntry[_getData].CombineValues();
@@ -467,22 +469,52 @@ namespace vApus.Stresstest {
                             
                             DownloadResponse(); // Discard response while it gets downloaded
                             
-                            // Here the _calendar_search is used to try and extract the _repo_object from the response's location header.
-                            if (relUrl.StartsWith("/chamilo/index.php") &amp;&amp; getData == _calendar_search) {
-                                if (! string.IsNullOrEmpty(location)) {
-                                    var query = HttpUtility.ParseQueryString(location);
-                                    _repo_object = query["repo_object"];
-                                    
+                            // Get the CAS ticket
+                            if (relUrl == "/cas/login" &amp;&amp; method == "GET") {
+                                string response = DownloadResponse(false); // Get full response in memory
+                                _cas_ticket = response.GetStringBetween("&lt;input type=\"hidden\" name=\"lt\" value=\"", "\" /&gt;");
+                            }
+                            else if (relUrl == "/cas/login" &amp;&amp; method == "POST") {
+                                DownloadResponse(); // Discard response while it gets downloaded
+                                try {
+                                    _cas_ticket_redirect = location.GetStringBetween("ticket=", ".example.org");
+                                    } catch(Exception ex) {
+                                    string msg = "CHAMILO: Failed extracting CAS ticket! Login failed!";
                                     #if DEBUG
-                                        EventPanel.AddEvent("USECHAMILO"
-                                        + "\n  relUrl: " + relUrl
-                                        + "\n  method: " + method
-                                        + "\n  getData: " + getData
-                                        + "\n  location: " + location
-                                        + "\n  repoObject: " + _repo_object);
+                                        EventPanel.AddEvent(msg);
                                     #endif
+                                    throw new Exception(msg, ex);
                                 }
                             }
+                            else {
+                                DownloadResponse(); // Discard response while it gets downloaded
+                            }
+                            
+                            // Here the _calendar_search is used to try and extract the _repo_object from the response's location header.
+                            if (relUrl.StartsWith("/index.php") &amp;&amp; getData == _calendar_search &amp;&amp; method == "POST") {
+                                var query = HttpUtility.ParseQueryString(location);
+                                _repo_object = query["viewer_object_id"];
+                                if (_repo_object == null) {
+                                    _repo_object = string.Empty;
+                                    
+                                    string msg = "CHAMILO: Failed extracting RepoObject! Did CAS/Chamilo login succeed?";
+                                    #if DEBUG
+                                        EventPanel.AddEvent(msg);
+                                    #endif
+                                    throw new Exception(msg);
+                                }
+                            }
+                            
+                            #if DEBUG
+                                EventPanel.AddEvent("USECHAMILO"
+                                + "\n  relUrl: " + relUrl
+                                + "\n  method: " + method
+                                + "\n  getData: " + getData
+                                + "\n  location: " + location
+                                + "\n  casTicket: " + _cas_ticket
+                                + "\n  casTicketRedirect: " + _cas_ticket_redirect
+                                + "\n  repoObject: " + _repo_object);
+                            #endif
                             
                             #else
                             DownloadResponse(); // Discard response while it gets downloaded
@@ -500,9 +532,11 @@ namespace vApus.Stresstest {
                             if (_parameterizedLogEntry[_relativeUrl].Value == "/index.php" || _parameterizedLogEntry[_relativeUrl].Value == "/ucp.php") {
                                 try {
                                     _sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
-                                    } catch (Exception ex) {
-                                    string msg = "USEPHPBB: Can't extract SID cookie!";
-                                    EventPanel.AddEvent(msg + "\n" + ex.Message);
+                                } catch (Exception ex) {
+                                    string msg = "PHPBB: Can't extract SID cookie!";
+                                    #if DEBUG
+                                        EventPanel.AddEvent(msg);
+                                    #endif
                                     throw new Exception(msg, ex);
                                 }
                                 
@@ -587,13 +621,13 @@ namespace vApus.Stresstest {
                         // GetData changes.
                         #if USECHAMILO
                             if(getData.Length != 0) {
-                                getData = "?" + getData.Replace("@repo_object", _repo_object);
+                                getData = "?" + getData.Replace("@casTicketRedirect", _cas_ticket_redirect).Replace("@repo_object", _repo_object);
                             }
-                            #elif USEPHPBB
+                        #elif USEPHPBB
                             if(getData.Length != 0) {
                                 getData = "?" + getData.Replace("@replaceSID", _sid);
                             }
-                            #else
+                        #else
                             if(getData.Length != 0) {
                                 getData = "?" + getData;
                             }
@@ -659,27 +693,26 @@ namespace vApus.Stresstest {
                                     postData = postData.Replace("@replaceViewstate", _viewstate).Replace("@replaceEventvalidation", _eventvalidation);
                                 }
                                 
-                                #elif USEDRUPAL
+                            #elif USEDRUPAL
                                 if (_formtoken_urls.Contains(_parameterizedLogEntry[_relativeUrl].Value) &amp;&amp; _formId != string.Empty &amp;&amp; _formToken != string.Empty) {
                                     postData = postData.Replace("@replaceFormId", _formId).Replace("@replaceFormToken", _formToken);
                                 }
                                 
-                                #elif USECHAMILO
-                                if (_repo_object != string.Empty) {
+                            #elif USECHAMILO
+                                if (_parameterizedLogEntry[_relativeUrl].Value == "/cas/login" &amp;&amp; _cas_ticket != string.Empty) {
+                                    postData = postData.Replace("@casTicket", _cas_ticket);
+                                }
+                                
+                                if (_repoobject_urls.Contains(_parameterizedLogEntry[_relativeUrl].Value) &amp;&amp; _repo_object != string.Empty) {
                                     postData = postData.Replace("@repo_object_length", _repo_object.Length.ToString()).Replace("@repo_object", _repo_object);
                                 }
                                 
-                                // Some custom headers are added when _document_search match is found.
-                                if (_parameterizedLogEntry[_getData].CombineValues() == _document_search) {
-                                    _httpWebRequest.Headers.Add("Pragma", "no-cache");
-                                }
-                                
-                                #elif USEPHPBB
+                            #elif USEPHPBB
                                 if (_sid != string.Empty) {
                                     postData = postData.Replace("@replaceSID", _sid);
                                 }
                                 
-                                #else
+                            #else
                                 
                             #endif
                             
