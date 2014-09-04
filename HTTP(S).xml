@@ -136,7 +136,7 @@
     //#define USEDRUPAL
     
     // Chamilo preprocessor. More (Dutch) explanation in HTTP_CHAMILO_README.txt.
-    #define USECHAMILO
+    //#define USECHAMILO
     
     // PHPBB example preprocessor.
     //#define USEPHPBB
@@ -295,7 +295,8 @@ namespace vApus.Stresstest {
                 error = null;
                 
                 try {
-                    _httpWebRequest = (HttpWebRequest)System.Net.WebRequest.Create(new Uri(_connectionProxySyntaxItem1 + "://" + _connectionProxySyntaxItem0));
+                    Destination dest = GetDestination();
+                    _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}://{1}:{2}", dest.Protocol, dest.Host, dest.Port)));
                     _httpWebRequest.UserAgent = "vApus - Test connection function";
                     _httpWebRequest.Timeout = 60000;
                     _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
@@ -433,7 +434,7 @@ namespace vApus.Stresstest {
                                 + "\n  eventvalidation: " + _eventvalidation);
                             #endif
                             
-                        #elif USEDRUPAL
+                            #elif USEDRUPAL
                             string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
                             string method = _parameterizedLogEntry[_requestMethod].Value;
                             string location = _httpWebResponse.GetResponseHeader("Location");
@@ -461,7 +462,7 @@ namespace vApus.Stresstest {
                                 + "\n  redirectnode: " + _redirectNode);
                             #endif
                             
-                        #elif USECHAMILO
+                            #elif USECHAMILO
                             string relUrl = _parameterizedLogEntry[_relativeUrl].Value;
                             string method = _parameterizedLogEntry[_requestMethod].Value;
                             string getData = _parameterizedLogEntry[_getData].CombineValues();
@@ -532,7 +533,7 @@ namespace vApus.Stresstest {
                             if (_parameterizedLogEntry[_relativeUrl].Value == "/index.php" || _parameterizedLogEntry[_relativeUrl].Value == "/ucp.php") {
                                 try {
                                     _sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
-                                } catch (Exception ex) {
+                                    } catch (Exception ex) {
                                     string msg = "PHPBB: Can't extract SID cookie!";
                                     #if DEBUG
                                         EventPanel.AddEvent(msg);
@@ -623,11 +624,11 @@ namespace vApus.Stresstest {
                             if(getData.Length != 0) {
                                 getData = "?" + getData.Replace("@casTicketRedirect", _cas_ticket_redirect).Replace("@repo_object", _repo_object);
                             }
-                        #elif USEPHPBB
+                            #elif USEPHPBB
                             if(getData.Length != 0) {
                                 getData = "?" + getData.Replace("@replaceSID", _sid);
                             }
-                        #else
+                            #else
                             if(getData.Length != 0) {
                                 getData = "?" + getData;
                             }
@@ -693,12 +694,12 @@ namespace vApus.Stresstest {
                                     postData = postData.Replace("@replaceViewstate", _viewstate).Replace("@replaceEventvalidation", _eventvalidation);
                                 }
                                 
-                            #elif USEDRUPAL
+                                #elif USEDRUPAL
                                 if (_formtoken_urls.Contains(_parameterizedLogEntry[_relativeUrl].Value) &amp;&amp; _formId != string.Empty &amp;&amp; _formToken != string.Empty) {
                                     postData = postData.Replace("@replaceFormId", _formId).Replace("@replaceFormToken", _formToken);
                                 }
                                 
-                            #elif USECHAMILO
+                                #elif USECHAMILO
                                 if (_parameterizedLogEntry[_relativeUrl].Value == "/cas/login" &amp;&amp; _cas_ticket != string.Empty) {
                                     postData = postData.Replace("@casTicket", _cas_ticket);
                                 }
@@ -707,12 +708,12 @@ namespace vApus.Stresstest {
                                     postData = postData.Replace("@repo_object_length", _repo_object.Length.ToString()).Replace("@repo_object", _repo_object);
                                 }
                                 
-                            #elif USEPHPBB
+                                #elif USEPHPBB
                                 if (_sid != string.Empty) {
                                     postData = postData.Replace("@replaceSID", _sid);
                                 }
                                 
-                            #else
+                                #else
                                 
                             #endif
                             
