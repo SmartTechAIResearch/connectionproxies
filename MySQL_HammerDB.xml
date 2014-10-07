@@ -343,11 +343,10 @@ namespace vApus.Stresstest {
                     _isDisposed = true;
                     try{
                         // Timeout asap.
-                        _command.CommandTimeout = 1;
-                        }catch{
-                    }
-                    // #672: Disable CloseConnection() in Dispose()
-                    //CloseConnection();
+                        _command.Cancel();
+                        } catch{}
+                        // #672: Disable CloseConnection() in Dispose()
+                        //CloseConnection();
                     _connection.Dispose();
                     _connection = null;
                     _command.Dispose();
