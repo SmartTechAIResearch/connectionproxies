@@ -68,12 +68,6 @@
     
     Note: If you want to edit this connection proxy code you need to know what you are doing. You might break your stresstest.
     
-    -------------------------
-    
-    Please re-reference hivesharp-test.dll and Thrift.dll after importing this connection proxy.
-    
-    -------------------------
-    
     VERSION @BRANCH@-@TM@
 */
 
