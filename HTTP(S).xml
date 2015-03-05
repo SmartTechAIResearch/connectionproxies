@@ -743,6 +743,8 @@ namespace vApus.Stresstest {
                                 domain = domain.Substring(8);
                             }
                             
+							if(domain.Contains(":")) domain = domain.Split(':')[0];
+							
                             // Support for top level domains; we probably don't need this.
                             // TODO: Should be tested with a URL (not IP) to verify this.
                             /*
