@@ -191,7 +191,7 @@ namespace vApus.Stresstest {
                         string logEntry = parameterizedLogEntry[_content].Value;
                         
                         _socketWrapper.Send(logEntry, SendType.Text);
-                        _socketWrapper.ReceiveBytes();
+                        _socketWrapper.Receive(SendType.Text);
                     }
                     catch (Exception ex) {
                         exception = ex;
