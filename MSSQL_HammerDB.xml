@@ -157,7 +157,7 @@
         // do stuff...
     // #endif
     
-    //#define DEBUG
+    //#define DEBUGMODE
 #endregion // Preprocessors
 
 #region Usings
@@ -394,7 +394,7 @@ namespace vApus.Stresstest {
                 _command.Parameters.AddWithValue("@TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1
                     EventPanel.AddEvent("New Order " + i);
                 #endif
@@ -450,7 +450,7 @@ namespace vApus.Stresstest {
                 _command.Parameters.AddWithValue("@TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1
                     EventPanel.AddEvent("Payment " + i);
                 #endif
@@ -466,7 +466,7 @@ namespace vApus.Stresstest {
                 _command.Parameters.AddWithValue("@TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1
                     EventPanel.AddEvent("Delivery " + i);
                 #endif
@@ -483,7 +483,7 @@ namespace vApus.Stresstest {
                 _command.Parameters.AddWithValue("@threshold", threshold);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1 (select, no affected rows == 0)
                     EventPanel.AddEvent("Stock Level " + i);
                 #endif
@@ -510,7 +510,7 @@ namespace vApus.Stresstest {
                 _command.Parameters.AddWithValue("@os_c_last", name);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1 (select, no affected rows == 0)
                     EventPanel.AddEvent("Order Status " + i);
                 #endif
