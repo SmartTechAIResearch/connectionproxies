@@ -174,7 +174,7 @@ namespace vApus.Stresstest {
             
             // Labels, for the index values of the StringTree nodes (eg. int ip = 0).
             enum SyntaxItem {
-                RelativeUrl = 0, RequestMethod, GetData, PostDataUtf8, PostDataHex, ContentType, Accept, Protocol, DestinationHost, DestinationPort, Referer, ClientConnectedTimestamp, SentRequestTimestamp
+                RelativeUrl = 0, RequestMethod, GetData, PostDataUtf8, PostDataHex, ContentType, Accept, Protocol, DestinationHost, DestinationPort, Referer
             }
             
             //To use the post data bytes instead of the text. For instance, to upload an image. Insert relative URLs here.
@@ -486,7 +486,7 @@ namespace vApus.Stresstest {
                     string postData = _parameterizedLogEntry[(int)SyntaxItem.PostDataHex].Value;
                     if(postData.Length != 0) {
                         byte[] postDataBytes = HexToBytes(postData);
-                        _httpWebRequest.ContentLength = postDataBytes.Length;
+                        _httpWebRequest.ContentLength = postData.Length;
                         _httpWebRequest.ContentType   = _parameterizedLogEntry[(int)SyntaxItem.ContentType].Value;
                         using (Stream postStream = _httpWebRequest.GetRequestStream()) {
                             postStream.Write(postDataBytes, 0, postDataBytes.Length);
