@@ -677,7 +677,7 @@ namespace vApus.Stresstest
           <IsEmpty>False</IsEmpty>
         </ConnectionProxyCode>
       </Items>
-      <Label>HTTP Elasticsearch</Label>
+      <Label>HTTP Elasticsearch @BRANCH@-@TM@</Label>
       <ShowInGui>True</ShowInGui>
       <IsDefaultItem>False</IsDefaultItem>
       <IsEmpty>False</IsEmpty>
