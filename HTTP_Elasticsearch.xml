@@ -107,7 +107,7 @@
 
 #region Preprocessors
     // Enable DEBUG mode
-    //#define DEBUGMODE
+    //#define DEBUGMODEMODE
     
     // This preprocessor disabes .NET's own cookieparser and uses our own implementation instead. This should only be used when
     // the cookiedomain is different than the used Connection, when cookies from another domain are discarded. For example a
@@ -238,7 +238,7 @@ namespace vApus.Stresstest
             // Trust all certificates for https testing.
             ServicePointManager.ServerCertificateValidationCallback = (object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors errors) =&gt; { return true; };
             
-            #if DEBUGMODE
+            #if DEBUGMODEMODE
                 EventPanel.AddEvent("Enabled preprocessors:");
                 #if USELOGGEDCOOKIES
                     EventPanel.AddEvent("  USELOGGEDCOOKIES");
@@ -469,7 +469,7 @@ namespace vApus.Stresstest
                     catch (Exception ex)
                     {
                         exception = ex;
-                        #if DEBUGMODE
+                        #if DEBUGMODEMODE
                             EventPanel.AddEvent("SendAndReceive Exception: " + exception.Message);
                         #endif
                     }
@@ -574,7 +574,7 @@ namespace vApus.Stresstest
                 _httpWebRequest.ServicePoint.Expect100Continue = false;
                 _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
                 
-                #if DEBUGMODE
+                #if DEBUGMODEMODE
                     _httpWebRequest.Headers.Add("vApus-User: " + System.Threading.Thread.CurrentThread.Name);
                 #endif
                 

@@ -148,7 +148,7 @@
         // do stuff...
     // #endif
     
-    //#define DEBUG
+    //#define DEBUGMODE
 #endregion // Preprocessors
 
 #region Usings
@@ -390,7 +390,7 @@ namespace vApus.Stresstest {
                 AddInParameter("?TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("New Order " + i + " parameters " + CombineParameterValues());
                 #endif
@@ -469,7 +469,7 @@ namespace vApus.Stresstest {
                 AddInParameter("?TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("Payment " + i + " parameters " + CombineParameterValues());
                 #endif
@@ -485,7 +485,7 @@ namespace vApus.Stresstest {
                 AddInParameter("?TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("Delivery " + i + " parameters " + CombineParameterValues());
                 #endif
@@ -502,7 +502,7 @@ namespace vApus.Stresstest {
                 AddInParameter("?threshold", threshold);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("Stock Level " + i + " parameters " + CombineParameterValues());
                 #endif
@@ -535,7 +535,7 @@ namespace vApus.Stresstest {
                 AddOutParameter("?os_o_carrier_id", MySqlDbType.Int32);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("Order Status " + i + " parameters " + CombineParameterValues());
                 #endif
