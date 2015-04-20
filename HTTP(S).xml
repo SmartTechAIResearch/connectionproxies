@@ -107,7 +107,7 @@
 
 #region Preprocessors
     // Enable DEBUG mode
-    //#define DEBUG
+    //#define DEBUGMODE
     
     // This preprocessor disabes .NET's own cookieparser and uses our own implementation instead. This should only be used when
     // the cookiedomain is different than the used Connection, when cookies from another domain are discarded. For example a
@@ -254,7 +254,7 @@ namespace vApus.Stresstest {
             // Trust all certificates for https testing.
             ServicePointManager.ServerCertificateValidationCallback = (object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors errors) =&gt; { return true; };
             
-            #if DEBUG
+            #if DEBUGMODE
                 EventPanel.AddEvent("Enabled preprocessors:");
                 #if USELOGGEDCOOKIES
                     EventPanel.AddEvent("  USELOGGEDCOOKIES");
@@ -426,7 +426,7 @@ namespace vApus.Stresstest {
                                 DownloadResponse(); // Discard response while it gets downloaded
                             }
                             
-                            #if DEBUG
+                            #if DEBUGMODE
                                 EventPanel.AddEvent("USEASPNET"
                                 + "\n  relUrl: " + relUrl
                                 + "\n  method: " + method
@@ -452,7 +452,7 @@ namespace vApus.Stresstest {
                                 _redirectNode = location.GetStringBetween("/node/", "?render=overlay");
                             }
                             
-                            #if DEBUG
+                            #if DEBUGMODE
                                 EventPanel.AddEvent("USEDRUPAL"
                                 + "\n  relUrl: " + relUrl
                                 + "\n  method: " + method
@@ -481,7 +481,7 @@ namespace vApus.Stresstest {
                                     _cas_ticket_redirect = location.GetStringBetween("ticket=", ".example.org");
                                     } catch(Exception ex) {
                                     string msg = "CHAMILO: Failed extracting CAS ticket! Login failed!";
-                                    #if DEBUG
+                                    #if DEBUGMODE
                                         EventPanel.AddEvent(msg);
                                     #endif
                                     throw new Exception(msg, ex);
@@ -499,14 +499,14 @@ namespace vApus.Stresstest {
                                     _repo_object = string.Empty;
                                     
                                     string msg = "CHAMILO: Failed extracting RepoObject! Did CAS/Chamilo login succeed?";
-                                    #if DEBUG
+                                    #if DEBUGMODE
                                         EventPanel.AddEvent(msg);
                                     #endif
                                     throw new Exception(msg);
                                 }
                             }
                             
-                            #if DEBUG
+                            #if DEBUGMODE
                                 EventPanel.AddEvent("USECHAMILO"
                                 + "\n  relUrl: " + relUrl
                                 + "\n  method: " + method
@@ -535,13 +535,13 @@ namespace vApus.Stresstest {
                                     _sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
                                     } catch (Exception ex) {
                                     string msg = "PHPBB: Can't extract SID cookie!";
-                                    #if DEBUG
+                                    #if DEBUGMODE
                                         EventPanel.AddEvent(msg);
                                     #endif
                                     throw new Exception(msg, ex);
                                 }
                                 
-                                #if DEBUG
+                                #if DEBUGMODE
                                     EventPanel.AddEvent("USEPHPBB"
                                     + "\n _sid: " + _sid);
                                 #endif
@@ -550,7 +550,7 @@ namespace vApus.Stresstest {
                     }
                     catch (Exception ex) {
                         exception = ex;
-                        #if DEBUG
+                        #if DEBUGMODE
                             EventPanel.AddEvent("SendAndReceive Exception: " + exception.Message);
                         #endif
                     }
@@ -663,7 +663,7 @@ namespace vApus.Stresstest {
                         _httpWebRequest.ServicePoint.Expect100Continue = false;
                         _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
                         
-                        #if DEBUG
+                        #if DEBUGMODE
                             _httpWebRequest.Headers.Add("vApus-User: " + System.Threading.Thread.CurrentThread.Name);
                         #endif
                         
