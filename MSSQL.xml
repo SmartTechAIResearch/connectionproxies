@@ -167,7 +167,7 @@
     using System.Data.SqlClient;
 #endregion // Usings
 
-namespace vApus.Stresstest {
+namespace vApus.StressTest {
     public class ConnectionProxy : IConnectionProxy {
         
         #region Fields
@@ -242,12 +242,12 @@ namespace vApus.Stresstest {
                     _connection.Close();
                 }
             }
-            public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
                 exception = null;
                 
                 //
-                // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
-                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
+                // parameterizedRequest is the log entry parsed to a String Tree using the Log Rule Set.
+                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together. 
                 //
                 
@@ -256,7 +256,7 @@ namespace vApus.Stresstest {
                 // (eg. Fields or functions from the free coding section.)
                 //
                 
-                _command.CommandText = parameterizedLogEntry.Value;
+                _command.CommandText = parameterizedRequest.Value;
                 if (_isDisposed) {
                     sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();

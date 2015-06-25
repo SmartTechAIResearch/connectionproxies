@@ -148,7 +148,7 @@
     //using System.Reflection;
 #endregion // Usings
 
-namespace vApus.Stresstest {
+namespace vApus.StressTest {
     public class ConnectionProxy : IConnectionProxy {
         
         #region Fields
@@ -161,7 +161,7 @@ namespace vApus.Stresstest {
             System.UInt16 _connectionProxySyntaxItem2 = 80; // Port [The default value for this syntax item is used if no value is provided in the connection.]
             // -- RuleSetFields --
             
-            StringTree _parameterizedLogEntry;
+            StringTree _parameterizedRequest;
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
             CookieCollection _cookieCollection;
@@ -252,13 +252,13 @@ namespace vApus.Stresstest {
             
             public void CloseConnection() { }
             
-            public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
-                _parameterizedLogEntry = parameterizedLogEntry;
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
+                _parameterizedRequest = parameterizedRequest;
                 exception = null;
                 
                 //
-                // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
-                // String Tree is a simple class: it can have either a value (property: string Value) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
+                // parameterizedRequest is the log entry parsed to a String Tree using the Log Rule Set.
+                // String Tree is a simple class: it can have either a value (property: string Value) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
                 
@@ -296,8 +296,8 @@ namespace vApus.Stresstest {
                         //
                         
                         // DRUPAL EXAMPLE
-                        // string relUrl = _parameterizedLogEntry[(int)SyntaxItem.RelativeUrl].Value;
-                        // string method = _parameterizedLogEntry[(int)SyntaxItem.RequestMethod].Value;
+                        // string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
+                        // string method = _parameterizedRequest[(int)SyntaxItem.RequestMethod].Value;
                         // string location = _httpWebResponse.GetResponseHeader("Location");
                         // 
                         // if (method == "GET" &amp;&amp; _formtokenUrls.Contains(relUrl)) {
@@ -334,7 +334,7 @@ namespace vApus.Stresstest {
                         //
                         
                         // PHPBB EXAMPLE
-                        // string relUrl = _parameterizedLogEntry[(int)SyntaxItem.RelativeUrl].Value;
+                        // string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
                         // if (relUrl == "/index.php" || relUrl == "/ucp.php") {
                             // try {
                                 // _sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
@@ -410,8 +410,8 @@ namespace vApus.Stresstest {
         
         #region Free Coding
             private void InitHttpWebRequest() {
-                string relUrl = _parameterizedLogEntry[(int)SyntaxItem.RelativeUrl].Value;
-                string getData = _parameterizedLogEntry[(int)SyntaxItem.GetData].CombineValues();
+                string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
+                string getData = _parameterizedRequest[(int)SyntaxItem.GetData].CombineValues();
                 
                 //
                 // CUSTOMIZATION:
@@ -431,14 +431,14 @@ namespace vApus.Stresstest {
                 
                 _httpWebRequest = (HttpWebRequest)WebRequest.Create(CreateUri(relUrl, getData));
                 // Set the HTTP request method (GET/POST).
-                _httpWebRequest.Method    = _parameterizedLogEntry[(int)SyntaxItem.RequestMethod].Value;
+                _httpWebRequest.Method    = _parameterizedRequest[(int)SyntaxItem.RequestMethod].Value;
                 // Set the User Agent.
                 _httpWebRequest.UserAgent = "vApus";                
                 // Set the Accept header.
-                _httpWebRequest.Accept = _parameterizedLogEntry[(int)SyntaxItem.Accept].Value;
+                _httpWebRequest.Accept = _parameterizedRequest[(int)SyntaxItem.Accept].Value;
                 // Set the Referer header.
                 #if USEREFERER
-                    _httpWebRequest.Referer = _parameterizedLogEntry[(int)SyntaxItem.Referer].Value;
+                    _httpWebRequest.Referer = _parameterizedRequest[(int)SyntaxItem.Referer].Value;
                 #endif
                 _httpWebRequest.Timeout = REQUEST_TIMEOUT_IN_MS;
                 _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
@@ -480,14 +480,14 @@ namespace vApus.Stresstest {
             }
             
             private void ApplyPostData() {
-                string relUrl = _parameterizedLogEntry[(int)SyntaxItem.RelativeUrl].Value;
+                string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
                 
                 if (_postDataAsBytesRelativeUrls.Contains(relUrl)) { // To use the post data bytes instead of the text. For instance, to upload an image.
-                    string postData = _parameterizedLogEntry[(int)SyntaxItem.PostDataHex].Value;
+                    string postData = _parameterizedRequest[(int)SyntaxItem.PostDataHex].Value;
                     if(postData.Length != 0) {
                         byte[] postDataBytes = HexToBytes(postData);
                         _httpWebRequest.ContentLength = postData.Length;
-                        _httpWebRequest.ContentType   = _parameterizedLogEntry[(int)SyntaxItem.ContentType].Value;
+                        _httpWebRequest.ContentType   = _parameterizedRequest[(int)SyntaxItem.ContentType].Value;
                         using (Stream postStream = _httpWebRequest.GetRequestStream()) {
                             postStream.Write(postDataBytes, 0, postDataBytes.Length);
                             postStream.Flush();
@@ -495,7 +495,7 @@ namespace vApus.Stresstest {
                     }
                 }
                 else {
-                    string postData = _parameterizedLogEntry[(int)SyntaxItem.PostDataUtf8].Value;
+                    string postData = _parameterizedRequest[(int)SyntaxItem.PostDataUtf8].Value;
                     if (postData.Length != 0) {
                         
                         //
@@ -508,7 +508,7 @@ namespace vApus.Stresstest {
                         // }   
                         
                         _httpWebRequest.ContentLength = postData.Length;
-                        _httpWebRequest.ContentType   = _parameterizedLogEntry[(int)SyntaxItem.ContentType].Value;
+                        _httpWebRequest.ContentType   = _parameterizedRequest[(int)SyntaxItem.ContentType].Value;
                         using (Stream postStream = _httpWebRequest.GetRequestStream()) {
                             using (StreamWriter postStreamWriter = new StreamWriter(postStream)) {
                                 postStreamWriter.Write(postData);
@@ -609,7 +609,7 @@ namespace vApus.Stresstest {
                 string uri = string.Empty;
                 
                 #if USEMULTICONNECTION
-                    uri = string.Format("{0}://{1}:{2}", _parameterizedLogEntry[(int)SyntaxItem.Protocol].Value, _parameterizedLogEntry[(int)SyntaxItem.DestinationHost].Value, _parameterizedLogEntry[(int)SyntaxItem.DestinationPort].Value);
+                    uri = string.Format("{0}://{1}:{2}", _parameterizedRequest[(int)SyntaxItem.Protocol].Value, _parameterizedRequest[(int)SyntaxItem.DestinationHost].Value, _parameterizedRequest[(int)SyntaxItem.DestinationPort].Value);
                     #else
                     uri = string.Format("{0}://{1}:{2}", _connectionProxySyntaxItem1, _connectionProxySyntaxItem0, _connectionProxySyntaxItem2);
                 #endif

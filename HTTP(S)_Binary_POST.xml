@@ -74,7 +74,7 @@
     // #endif
     
     // Enable DEBUG mode
-    //#define DEBUGMODE
+    //#define DEBUG
 #endregion // Preprocessors
 
 #region Usings
@@ -94,7 +94,7 @@
     using System.Security.Cryptography.X509Certificates;
 #endregion // Usings
 
-namespace vApus.Stresstest {
+namespace vApus.StressTest {
     public class ConnectionProxy : IConnectionProxy {
         
         #region Fields
@@ -109,7 +109,7 @@ namespace vApus.Stresstest {
             //
             // Here you can put labels, for instance, for the index values of the String Tree nodes (eg. int ip = 0).
             //
-            StringTree _parameterizedLogEntry;
+            StringTree _parameterizedRequest;
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
             CookieCollection _cookies;
@@ -200,13 +200,13 @@ namespace vApus.Stresstest {
                 }
             }
             
-            public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
-                _parameterizedLogEntry = parameterizedLogEntry;
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
+                _parameterizedRequest = parameterizedRequest;
                 exception = null;
                 
                 //
-                // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
-                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
+                // parameterizedRequest is the log entry parsed to a String Tree using the Log Rule Set.
+                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
                 
@@ -230,7 +230,7 @@ namespace vApus.Stresstest {
                         // Send the request to the server here.
                         //
                         
-                        string logEntry = _parameterizedLogEntry[_bytes].Value;
+                        string logEntry = _parameterizedRequest[_bytes].Value;
                         
                         // A parameterizing solution.
                         // string find = "foo";

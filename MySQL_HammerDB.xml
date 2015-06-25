@@ -148,7 +148,7 @@
         // do stuff...
     // #endif
     
-    //#define DEBUGMODE
+    //#define DEBUG
 #endregion // Preprocessors
 
 #region Usings
@@ -166,7 +166,7 @@
     using System.Collections.Generic;
 #endregion // Usings
 
-namespace vApus.Stresstest {
+namespace vApus.StressTest {
     public class ConnectionProxy : IConnectionProxy {
         
         #region Fields
@@ -255,12 +255,12 @@ namespace vApus.Stresstest {
                     _connection.Close();
                 }
             }
-            public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
                 exception = null;
                 
                 //
-                // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
-                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
+                // parameterizedRequest is the log entry parsed to a String Tree using the Log Rule Set.
+                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together. 
                 //
                 
@@ -293,7 +293,7 @@ namespace vApus.Stresstest {
                         _command.CommandType = CommandType.StoredProcedure;                        
                         
                         //Picking based on TPC-C doc.
-                        switch(parameterizedLogEntry.CombineValues()) {
+                        switch(parameterizedRequest.CombineValues()) {
                             case "new order":
                             NewOrder(_w_id, _w_id_input);
                             break;
@@ -390,7 +390,7 @@ namespace vApus.Stresstest {
                 AddInParameter("?TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUGMODE
+                #if DEBUG
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("New Order " + i + " parameters " + CombineParameterValues());
                 #endif
@@ -469,7 +469,7 @@ namespace vApus.Stresstest {
                 AddInParameter("?TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUGMODE
+                #if DEBUG
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("Payment " + i + " parameters " + CombineParameterValues());
                 #endif
@@ -485,7 +485,7 @@ namespace vApus.Stresstest {
                 AddInParameter("?TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUGMODE
+                #if DEBUG
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("Delivery " + i + " parameters " + CombineParameterValues());
                 #endif
@@ -502,7 +502,7 @@ namespace vApus.Stresstest {
                 AddInParameter("?threshold", threshold);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUGMODE
+                #if DEBUG
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("Stock Level " + i + " parameters " + CombineParameterValues());
                 #endif
@@ -535,7 +535,7 @@ namespace vApus.Stresstest {
                 AddOutParameter("?os_o_carrier_id", MySqlDbType.Int32);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUGMODE
+                #if DEBUG
                     //Affected rows for the LAST statement in the stored procedure, must be &gt; -1, (CAN BE 0)
                     EventPanel.AddEvent("Order Status " + i + " parameters " + CombineParameterValues());
                 #endif
