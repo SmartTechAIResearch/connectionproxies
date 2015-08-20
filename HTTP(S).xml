@@ -12,7 +12,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -38,7 +38,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -63,7 +63,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>ushortType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -107,7 +107,7 @@
 
 #region Preprocessors
     // Enable debug mode
-    #define DEBUGMODE
+    // #define DEBUGMODE
     
     // This preprocessor disabes .NET's own cookieparser and uses our own implementation instead. This should only be used when
     // the cookiedomain is different than the used Connection, when cookies from another domain are discarded. For example a
