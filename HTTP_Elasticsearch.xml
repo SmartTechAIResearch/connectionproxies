@@ -518,7 +518,9 @@ namespace vApus.Stresstest
                     try
                     {
                         // Timeout immediately.
-                        _httpWebRequest.Abort();
+                        if(_httpWebRequest != null){
+                           _httpWebRequest.Abort();
+                       }
                     }
                     catch { }
                     _httpWebRequest = null;
