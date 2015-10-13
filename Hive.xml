@@ -75,20 +75,16 @@
 // dllreferences:System.Data.dll;System.dll;System.Windows.Forms.dll;System.XML.dll;Thrift.dll;vApus.Stresstest.dll;vApus.Util.dll;hivesharp-test.dll;
 
 #region Preprocessors
-    
+    // Enable DEBUG mode
+    //#define DEBUGMODE
 #endregion // Preprocessors
 
 #region Usings
     using System;
     using System.Data;
     using System.Diagnostics;
-    // Contains the StringTree class.
     using vApus.Util;
     using hivesharp_test;
-    
-    //
-    // Here you can put your own usings under the default ones.
-    //
 #endregion // Usings
 
 namespace vApus.Stresstest {
@@ -104,28 +100,14 @@ namespace vApus.Stresstest {
             System.String _connectionProxySyntaxItem2 = string.Empty; // Database
             // -- RuleSetFields --
             
-            //
-            // Here you can put labels, for instance, for the index values of the String Tree nodes (eg. int ip = 0).
-            //
-            // OdbcConnection _connection;
-            //OdbcCommand _command = new OdbcCommand();
-            
             HiveConnection _connection;
             HiveQuery _command;
             HiveDataReader _reader;
         #endregion // Fields
         
         #region Properties
-            public bool IsConnectionOpen {
-                get {
-                    return _connection.IsOpen;
-                }
-            }
-            public bool IsDisposed {
-                get {
-                    return _isDisposed;
-                }
-            }
+            public bool IsConnectionOpen { get { return _connection.IsOpen; } }
+            public bool IsDisposed { get { return _isDisposed; } }
         #endregion // Properties
         
         public ConnectionProxy() {
@@ -147,17 +129,17 @@ namespace vApus.Stresstest {
         }
         
         #region Functions
-            public void TestConnection(out string error) {
-                error = null;
-            }
+            public void TestConnection(out string error) { error = null; }
             
             public void OpenConnection() {
-                if(!IsConnectionOpen)
-                _connection.Open();
+                if(!IsConnectionOpen) {
+                    _connection.Open();
+                }
             }
             public void CloseConnection() {
-                if(IsConnectionOpen)
-                _connection.Close();
+                if(IsConnectionOpen) {
+                    _connection.Close();
+                }
             }
             
             public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
@@ -167,11 +149,6 @@ namespace vApus.Stresstest {
                 // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
                 // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together. 
-                //
-                
-                //
-                // Initiate other stuff here.
-                // (eg. Fields or functions from the free coding section
                 //
                 
                 _command.CommandText = parameterizedLogEntry.Value;
@@ -185,22 +162,18 @@ namespace vApus.Stresstest {
                     sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
-                        //
-                        // Send the request to the server here.
-                        //
-                        
                         _reader = _command.ExecuteReader();
                     }
                     catch (Exception ex) {
                         exception = ex;
+                        #if DEBUGMODE
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                        #endif
                     }
                     finally {
-                        //
-                        // Close stuff if needed.
-                        //
-                        
-                        if (_reader != null)
-                        _reader.Close();
+                        if (_reader != null) {
+                            _reader.Close();
+                        }
                     }
                 }
                 catch {
@@ -221,19 +194,19 @@ namespace vApus.Stresstest {
             public void Dispose() {
                 if (!_isDisposed) {
                     _isDisposed = true;
-                    if (_reader != null)
-                    _reader.Close();  
-                    
+                    try {
+                        if(_reader != null) {
+                            _reader.Close();
+                            _reader = null;
+                        }
+                    }
+                    catch {
+                    }
                 }
-            #endregion //Functions
-            
-            #region Free Coding
-                //
-                // Anything you want
-                //
-            #endregion // Free Coding
-        } // ConnectionProxy
-    } // vApus.Stresstest</Code>
+            }
+        #endregion //Functions
+    } // ConnectionProxy
+} // vApus.Stresstest</Code>
           <ShowInGui>True</ShowInGui>
           <IsDefaultItem>False</IsDefaultItem>
           <IsEmpty>False</IsEmpty>

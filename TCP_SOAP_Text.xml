@@ -6,7 +6,10 @@
           <Items>
             <ConnectionProxySyntaxItem>
               <Items />
-              <Description></Description>
+              <DefaultValue>
+              </DefaultValue>
+              <Description>
+              </Description>
               <Label>IP</Label>
               <ShowInGui>True</ShowInGui>
               <IsDefaultItem>False</IsDefaultItem>
@@ -30,6 +33,8 @@
                   <IsEmpty>False</IsEmpty>
                 </Rule>
               </Items>
+              <DefaultValue>
+              </DefaultValue>
               <Description>Examples: application/x-www-form-urlencoded; application/x-amf</Description>
               <Label>Port</Label>
               <ShowInGui>True</ShowInGui>
@@ -54,8 +59,8 @@
     University College of West-Flanders, Department GKG
     
     Note: If you want to edit this connection proxy code you need to know what you are doing. You might break your stresstest.
-    	
-    	VERSION @BRANCH@-@TM@
+    
+    VERSION @BRANCH@-@TM@
 */
 
 //This connection proxy serves at sending text over a socket to the server, objects in the log are represented as SOAP strings.
@@ -64,25 +69,15 @@
 // dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;System.Net.dll;
 
 #region Preprocessors
-    //
-    // e.g. #define NOTMUCHUSEDFEATURE
-    //
-    // Further in code:
-    // #if NOTMUCHUSEDFEATURE
-    // do stuff...
-    // #endif
+    // Enable debug mode
+    //#define DEBUGMODE
 #endregion // Preprocessors
 
 #region Usings
     using System;
     using System.Data;
     using System.Diagnostics;
-    // Contains the StringTree class.
     using vApus.Util;
-    
-    //
-    // Here you can put your own usings under the default ones.
-    //
     using System.Net.Sockets;
 #endregion // Usings
 
@@ -98,9 +93,6 @@ namespace vApus.Stresstest {
             System.Int32 _connectionProxySyntaxItem1; // Port
             // -- RuleSetFields --
             
-            //
-            // Here you can put labels, for instance, for the index values of the String Tree nodes (eg. int ip = 0).
-            //
             SocketWrapper _socketWrapper;
             
             const int _sendBufferSize = 8912, _receiveBufferSize = 8912;
@@ -108,16 +100,8 @@ namespace vApus.Stresstest {
         #endregion // Fields
         
         #region Properties
-            public bool IsConnectionOpen {
-                get {
-                    return _socketWrapper != null &amp;&amp; _socketWrapper.Connected;
-                }
-            }
-            public bool IsDisposed {
-                get {
-                    return _isDisposed;
-                }
-            }
+            public bool IsConnectionOpen { get { return _socketWrapper != null &amp;&amp; _socketWrapper.Connected; } }
+            public bool IsDisposed { get { return _isDisposed; } }
         #endregion // Properties
         
         public ConnectionProxy() {
@@ -169,11 +153,6 @@ namespace vApus.Stresstest {
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
                 
-                //
-                // Initiate other stuff here.
-                // (eg. Fields or functions from the free coding section.)
-                //
-                
                 if (_isDisposed) {
                     sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();
@@ -184,10 +163,6 @@ namespace vApus.Stresstest {
                     sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
-                        //
-                        // Send the request to the server here.
-                        //
-                        
                         string logEntry = parameterizedLogEntry[_content].Value;
                         
                         _socketWrapper.Send(logEntry, SendType.Text);
@@ -195,11 +170,9 @@ namespace vApus.Stresstest {
                     }
                     catch (Exception ex) {
                         exception = ex;
-                    }
-                    finally {
-                        //
-                        // Close stuff if needed.
-                        //
+                        #if DEBUGMODE
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                        #endif
                     }
                 }
                 catch {
@@ -225,10 +198,6 @@ namespace vApus.Stresstest {
                 }
             }
         #endregion // Functions
-        
-        #region Free Coding
-            
-        #endregion // Free Coding
     } // ConnectionProxy
 } // vApus.Stresstest</Code>
           <ShowInGui>True</ShowInGui>
