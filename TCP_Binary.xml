@@ -78,7 +78,6 @@
     using System.Data;
     using System.Diagnostics;
     using vApus.Util;
-    using vApus.Stresstest;
     using System.Net.Sockets;
     using System.Collections.Generic;
 #endregion // Usings
