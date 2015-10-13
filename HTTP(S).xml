@@ -116,13 +116,13 @@
     // custom parser that works around this security feature.
     //#define USECUSTOMCOOKIEPARSER
     
-    // When used, the Connection set in vApus will be ignored for the stresstest. The logged "destination host" is used instead.
+    // When used, the Connection set in vApus will be ignored for the stresstest. The recorded "destination host" is used instead.
     // This is sometimes necessary if for example authentication is redirected to a secondary server or if cookie-free
     // subdomains (or CDNs) are used to serve static content.
     // Note: It is recommended to use this setting when testing a HTTPS website.
     //#define USEMULTICONNECTION
     
-    // Set the logged Referer HTTP header in requests.
+    // Set the recorded Referer HTTP header in requests.
     //#define USEREFERER
     
     // Some applications use custom HTTP headers. Use this preprocessor in combination with the _customHeaders array to
@@ -143,9 +143,6 @@
     using System.Windows.Forms;
     using System.Security.Cryptography.X509Certificates;
     using vApus.Util;
-    
-    // EXPERIMENTAL //
-    //using System.Reflection;
 #endregion // Usings
 
 namespace vApus.StressTest {
@@ -235,7 +232,6 @@ namespace vApus.StressTest {
                     error = ex.ToString();
                 }
                 finally {
-                    _cookieCollection= null;
                     if (_streamReader != null) {
                         try {
                             _streamReader.Close();
@@ -257,7 +253,7 @@ namespace vApus.StressTest {
                 exception = null;
                 
                 //
-                // parameterizedRequest is the log entry parsed to a String Tree using the Log Rule Set.
+                // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
                 // String Tree is a simple class: it can have either a value (property: string Value) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
@@ -288,73 +284,39 @@ namespace vApus.StressTest {
                             System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
                         }
                         
+                        // EXAMPLE CUSTOM CP (Drupal): DATA EXTRACTION FROM RESPONSE
+                        // IMPORTANT: be sure to
+                        //      1) always execute DownloadResponse()
+                        //      2) execute it only once in every specific case
+                        /*
+                            string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
+                            string method = _parameterizedRequest[(int)SyntaxItem.RequestMethod].Value;
+                            string getData = _parameterizedRequest[(int)SyntaxItem.GetData].CombineValues();
+                            string location = _httpWebResponse.GetResponseHeader("Location");
+                            
+                            if (relUrl == "/node/add/article" &amp;&amp; method == "GET") {
+                                string response = DownloadResponse(false); // Get full response in memory
+                                _formBuildId = GetStringBetween(response, "&lt;input type=\"hidden\" name=\"form_build_id\" value=\"", "\" /&gt;");
+                                _formToken   = GetStringBetween(response, "&lt;input type=\"hidden\" name=\"form_token\" value=\"", "\" /&gt;");  
+                            }
+                            else {
+                                DownloadResponse(); // Discard response while it gets downloaded
+                            }
+                            
+                            if (relUrl == "/node/add/article" &amp;&amp; !string.IsNullOrEmpty(location)) {
+                                _redirectNode = location.Substring(location.IndexOf("/blog/", StringComparison.InvariantCultureIgnoreCase) + "/blog/".Length);
+                            }
+                        */
                         
-                        //
-                        // CUSTOMIZATION:
-                        //    You can put your own code for extracting data from the response here. When making changes, don't forget to invoke DownloadResponse().
-                        //    Before making any changes, understand the workings of the Connection Proxy and/or ask for help.
-                        //
-                        
-                        // DRUPAL EXAMPLE
-                        // string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
-                        // string method = _parameterizedRequest[(int)SyntaxItem.RequestMethod].Value;
-                        // string location = _httpWebResponse.GetResponseHeader("Location");
-                        // 
-                        // if (method == "GET" &amp;&amp; _formtokenUrls.Contains(relUrl)) {
-                            // string response = DownloadResponse(false); // Get full response in memory
-                            // _formId    = GetStringBetween(response, "&lt;input type=\"hidden\" name=\"form_build_id\" value=\"", "\" /&gt;", "\"/&gt;");
-                            // _formToken = GetStringBetween(response, "&lt;input type=\"hidden\" name=\"form_token\" value=\"", "\" /&gt;", "\"/&gt;");
-                        // }
-                        // else {
-                            // DownloadResponse(); // Discard response while it gets downloaded
-                        // }
-                        // 
-                        // if (!string.IsNullOrEmpty(location) &amp;&amp; _redirectUrls.Contains(relUrl)) {
-                            // _redirectNode = GetStringBetween(location, "/node/", "?render=overlay");
-                        // }
-                        // 
-                        // #if DEBUGMODE
-                            // EventPanel.AddEvent("USEDRUPAL"
-                            // + "\n  relUrl: " + relUrl
-                            // + "\n  method: " + method
-                            // + "\n  location: " + location
-                            // + "\n  formId: " + _formId
-                            // + "\n  formToken: " + _formToken
-                            // + "\n  redirectnode: " + _redirectNode);
-                        // #endif
-                        
-                        DownloadResponse(); // Discard response while it gets downloaded. Make sure only one DownloadResponse() gets executed!
-                        
+                        // Remove this instance of DownloadResponse() if already used above this line for data extraction
+                        DownloadResponse();
                         
                         HandleCookiesAfterRequest();
-                        
-                        //
-                        // CUSTOMIZATION:
-                        //    Put your code for cookie data extraction here.
-                        //
-                        
-                        // PHPBB EXAMPLE
-                        // string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
-                        // if (relUrl == "/index.php" || relUrl == "/ucp.php") {
-                            // try {
-                                // _sid = _cookieCollection["phpbb3_ek7cb_sid"].Value;
-                            // } 
-                            // catch (Exception ex) {
-                                // string msg = "PHPBB: Can't extract SID cookie!";
-                                // #if DEBUGMODE
-                                    // EventPanel.AddEvent(msg);
-                                // #endif
-                                // throw new Exception(msg, ex);
-                            // }  
-                            // #if DEBUGMODE
-                                // EventPanel.AddEvent("USEPHPBB\n _sid: " + _sid);
-                            // #endif
-                        // }
                     }
                     catch (Exception ex) {
                         exception = ex;
                         #if DEBUGMODE
-                            EventPanel.AddEvent("SendAndReceive Exception: " + exception);
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
                         #endif
                     }
                     finally {
@@ -390,8 +352,8 @@ namespace vApus.StressTest {
                     try {
                         // Timeout immediately.
                         if(_httpWebRequest != null){
-                           _httpWebRequest.Abort();
-                       }
+                            _httpWebRequest.Abort();
+                        }
                     } 
                     catch { }
                     _httpWebRequest = null;
@@ -404,7 +366,8 @@ namespace vApus.StressTest {
                             _streamReader.Dispose();
                             _streamReader = null;
                         } 
-                        catch { }
+                        catch {
+                        }
                     }
                 }
             }
@@ -415,21 +378,13 @@ namespace vApus.StressTest {
                 string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
                 string getData = _parameterizedRequest[(int)SyntaxItem.GetData].CombineValues();
                 
-                //
-                // CUSTOMIZATION:
-                //    Chamge relative URL and get data content. 
-                //    Before making any changes, understand the workings of the Connection Proxy and/or ask for help.
-                //
-                
-                // DRUPAL EXAMPLE
-                // if (_redirectNode.Length != 0 &amp;&amp; relUrl == "/node/@replaceNode") {
-                    // relUrl = relUrl.Replace("@replaceNode", _redirectNode);
-                // }
-                
-                // PHPBB EXAMPLE
-                // if(getData.Length != 0) {
-                    // getData = getData.Replace("@replaceSID", _sid);
-                // }
+                // EXAMPLE CUSTOM CP (Drupal): USE EXTRACTED DATA IN relUrl
+                // Here you can also change getData if needed
+                /*
+                    if (relUrl == "/blog/@replaceNode" &amp;&amp; _redirectNode != string.Empty) {
+                        relUrl = relUrl.Replace("@replaceNode", _redirectNode);
+                    }
+                */
                 
                 _httpWebRequest = (HttpWebRequest)WebRequest.Create(CreateUri(relUrl, getData));
                 // Set the HTTP request method (GET/POST).
@@ -450,7 +405,7 @@ namespace vApus.StressTest {
                 _httpWebRequest.Headers.Add("Accept-Encoding: gzip, deflate");
                 // Set the Accept-Language header.
                 _httpWebRequest.Headers.Add("Accept-Language: en-US");
-                // Don't autoredirect: redirects are already logged.
+                // Don't autoredirect: redirects are already recorded.
                 _httpWebRequest.AllowAutoRedirect = false;
                 // Set the initial content length to 0.
                 _httpWebRequest.ContentLength = 0;
@@ -462,9 +417,6 @@ namespace vApus.StressTest {
                 #if DEBUGMODE
                     _httpWebRequest.Headers.Add("vApus-User: " + System.Threading.Thread.CurrentThread.Name);
                 #endif
-                
-                // EXPERIMENTAL - Allways set KeepAlive header //
-                //_httpWebRequest.ServicePoint.GetType().GetProperty("HttpBehaviour", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_httpWebRequest.ServicePoint, (byte)0, null);
                 
                 #if USECUSTOMHEADERS
                     foreach (string header in _customHeaders) {
@@ -500,14 +452,12 @@ namespace vApus.StressTest {
                     string postData = _parameterizedRequest[(int)SyntaxItem.PostDataUtf8].Value;
                     if (postData.Length != 0) {
                         
-                        //
-                        // CUSTOMIZATION:
-                        //    Put your code for post data replacement here.
-                        //
-                        
-                        // if (_sid.Length != 0) {
-                            // postData = postData.Replace("@replaceSID", _sid);
-                        // }   
+                        // EXAMPLE CUSTOM CP (Drupal): CHANGE POSTDATA
+                        /*
+                            if (relUrl == "/node/add/article" &amp;&amp; _formBuildId != string.Empty &amp;&amp; _formToken != string.Empty) {
+                                postData = postData.Replace("@replaceFormBuildId", _formBuildId).Replace("@replaceFormToken", _formToken);
+                            }
+                        */
                         
                         _httpWebRequest.ContentLength = postData.Length;
                         _httpWebRequest.ContentType   = _parameterizedRequest[(int)SyntaxItem.ContentType].Value;

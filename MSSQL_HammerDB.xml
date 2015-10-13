@@ -22,7 +22,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>intType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -67,7 +67,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>True</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -94,7 +94,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>boolType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -149,32 +149,20 @@
 // dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;System.XML.dll;System.Windows.Forms.dll;
 
 #region Preprocessors
-    //
-    // e.g. #define NOTMUCHUSEDFEATURE
-    //
-    // Further in code:
-    // #if NOTMUCHUSEDFEATURE
-        // do stuff...
-    // #endif
-    
-    //#define DEBUG
+    // Enable debug mode
+    //#define DEBUGMODE
 #endregion // Preprocessors
 
 #region Usings
     using System;
     using System.Data;
     using System.Diagnostics;
-    // Contains the StringTree class.
     using vApus.Util;
-    
-    //
-    // Here you can put your own usings under the default ones.
-    //
     using System.Data.SqlClient;
     using System.Threading;
 #endregion // Usings
 
-namespace vApus.StressTest {
+namespace vApus.Stresstest {
     public class ConnectionProxy : IConnectionProxy {
         
         #region Fields
@@ -191,9 +179,6 @@ namespace vApus.StressTest {
             System.String _connectionProxySyntaxItem6 = "dbmssocn"; // Network Library [The default value for this syntax item is used if no value is provided in the connection.]
             // -- RuleSetFields --
             
-            //
-            // Here you can put labels, for instance, for the index values of the String Tree nodes (eg. int ip = 0).
-            //
             SqlConnection _connection;
             SqlCommand _command;
             
@@ -206,16 +191,8 @@ namespace vApus.StressTest {
         #endregion // Fields
         
         #region Properties
-            public bool IsConnectionOpen {
-                get {
-                    return _connection.State == ConnectionState.Open;
-                }
-            }
-            public bool IsDisposed {
-                get {
-                    return _isDisposed;
-                }
-            }
+            public bool IsConnectionOpen { get { return _connection.State == ConnectionState.Open; } }
+            public bool IsDisposed { get { return _isDisposed; } }
         #endregion // Properties
         
         public ConnectionProxy() {
@@ -269,14 +246,9 @@ namespace vApus.StressTest {
                 exception = null;
                 
                 //
-                // parameterizedRequest is the log entry parsed to a String Tree using the Log Rule Set.
+                // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
                 // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together. 
-                //
-                
-                //
-                // Initiate other stuff here.
-                // (eg. Fields or functions from the free coding section.)
                 //
                 
                 if(_w_id == -1){
@@ -296,10 +268,6 @@ namespace vApus.StressTest {
                     sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
-                        //
-                        // Send the request to the server here.
-                        //
-                        
                         _command.CommandType = CommandType.StoredProcedure;                        
                         
                         //Picking based on TPC-C doc.
@@ -323,14 +291,15 @@ namespace vApus.StressTest {
                     }
                     catch(SqlException sqlEx) {
                         exception = sqlEx;
+                        #if DEBUGMODE
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
+                        #endif
                     }
                     catch (Exception ex) {
                         exception = ex;
-                    }
-                    finally {
-                        //
-                        // Close stuff if needed.
-                        //                        
+                        #if DEBUGMODE
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
+                        #endif
                     }
                 }
                 catch {
@@ -354,13 +323,25 @@ namespace vApus.StressTest {
                     try{
                         // Timeout asap.
                         _command.Cancel();
-                        } catch{}
-                        // #672: Disable CloseConnection() in Dispose()
-                        //CloseConnection();
-                    _connection.Dispose();
-                    _connection = null;
-                    _command.Dispose();
-                    _command = null;
+                    }
+                    catch{
+                    }
+                    try {
+                        if(_connection != null) {
+                            _connection.Dispose();
+                            _connection = null;
+                        }
+                    }
+                    catch {
+                    }
+                    try {
+                        if(_command != null) {
+                            _command.Dispose();
+                            _command = null;
+                        }
+                    }
+                    catch {
+                    }
                 }
             }
         #endregion //Functions
@@ -394,7 +375,7 @@ namespace vApus.StressTest {
                 _command.Parameters.AddWithValue("@TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1
                     EventPanel.AddEvent("New Order " + i);
                 #endif
@@ -450,7 +431,7 @@ namespace vApus.StressTest {
                 _command.Parameters.AddWithValue("@TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1
                     EventPanel.AddEvent("Payment " + i);
                 #endif
@@ -466,7 +447,7 @@ namespace vApus.StressTest {
                 _command.Parameters.AddWithValue("@TIMESTAMP", DateTime.Now);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1
                     EventPanel.AddEvent("Delivery " + i);
                 #endif
@@ -483,7 +464,7 @@ namespace vApus.StressTest {
                 _command.Parameters.AddWithValue("@threshold", threshold);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1 (select, no affected rows == 0)
                     EventPanel.AddEvent("Stock Level " + i);
                 #endif
@@ -510,7 +491,7 @@ namespace vApus.StressTest {
                 _command.Parameters.AddWithValue("@os_c_last", name);
                 
                 int i = _command.ExecuteNonQuery();
-                #if DEBUG
+                #if DEBUGMODE
                     //Affected rows for all statements in the stored procedure, must be &gt; -1 (select, no affected rows == 0)
                     EventPanel.AddEvent("Order Status " + i);
                 #endif
