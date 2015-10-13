@@ -141,25 +141,15 @@
 // dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;MySql.Data.dll;System.XML.dll;
 
 #region Preprocessors
-    //
-    // e.g. #define NOTMUCHUSEDFEATURE
-    //
-    // Further in code:
-    // #if NOTMUCHUSEDFEATURE
-        // do stuff...
-    // #endif
+    // Enable debug mode
+    //#define DEBUGMODE
 #endregion // Preprocessors
 
 #region Usings
     using System;
     using System.Data;
     using System.Diagnostics;
-    // Contains the StringTree class.
     using vApus.Util;
-    
-    //
-    // Here you can put your own usings under the default ones.
-    //
     using MySql.Data.MySqlClient;
 #endregion // Usings
 
@@ -179,25 +169,14 @@ namespace vApus.Stresstest {
             System.Boolean _connectionProxySyntaxItem5; // Pooling
             // -- RuleSetFields --
             
-            //
-            // Here you can put labels, for instance, for the index values of the String Tree nodes (eg. int ip = 0).
-            //
             MySqlConnection _connection;
             MySqlCommand _command;
             IDataReader _reader;
         #endregion // Fields
         
         #region Properties
-            public bool IsConnectionOpen {
-                get {
-                    return _connection.State == ConnectionState.Open;
-                }
-            }
-            public bool IsDisposed {
-                get {
-                    return _isDisposed;
-                }
-            }
+            public bool IsConnectionOpen { get { return _connection.State == ConnectionState.Open; } }
+            public bool IsDisposed { get { return _isDisposed; } }
         #endregion // Properties
         
         public ConnectionProxy() {
@@ -261,20 +240,15 @@ namespace vApus.Stresstest {
                     sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
-                        //
-                        // Send the request to the server here.
-                        //
-                        
                         _reader = _command.ExecuteReader();
                     }
                     catch (Exception ex) {
                         exception = ex;
+                        #if DEBUGMODE
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                        #endif
                     }
                     finally {
-                        //
-                        // Close stuff if needed.
-                        //
-                        
                         if (_reader != null) {
                             _reader.Close();
                         }
@@ -298,30 +272,41 @@ namespace vApus.Stresstest {
             public void Dispose() {
                 if (!_isDisposed) {
                     _isDisposed = true;
-                    try{
+                    try {
                         // Timeout asap.
                         _command.Cancel();
-                        } catch{}
-                        // #672: Disable CloseConnection() in Dispose()
-                        //CloseConnection();
-                        _connection.Dispose();
-                        _connection = null;
-                        _command.Dispose();
-                        _command = null;
-                        if(_reader != null)
-                        _reader.Close();
-                        _reader = null;
+                    }
+                    catch {
+                    }
+                    try {
+                        if(_connection != null) {
+                            _connection.Dispose();
+                            _connection = null;
+                        }
+                    }
+                    catch {
+                    }
+                    try {
+                        if(_command != null) {
+                            _command.Dispose();
+                            _command = null;
+                        }
+                    }
+                    catch {
+                    }
+                    try {
+                        if(_reader != null) {
+                            _reader.Close();
+                            _reader = null;
+                        }
+                    }
+                    catch {
                     }
                 }
-            #endregion // Functions
-            
-            #region Free Coding
-                //
-                // Anything you want
-                //
-            #endregion // Free Coding
-        } // ConnectionProxy
-    } // vApus.Stresstest</Code>
+            }
+        #endregion // Functions
+    } // ConnectionProxy
+} // vApus.Stresstest</Code>
           <ShowInGui>True</ShowInGui>
           <IsDefaultItem>False</IsDefaultItem>
           <IsEmpty>False</IsEmpty>

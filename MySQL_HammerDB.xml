@@ -140,14 +140,7 @@
 // dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;MySql.Data.dll;System.XML.dll;System.Windows.Forms.dll;
 
 #region Preprocessors
-    //
-    // e.g. #define NOTMUCHUSEDFEATURE
-    //
-    // Further in code:
-    // #if NOTMUCHUSEDFEATURE
-        // do stuff...
-    // #endif
-    
+    // Enable debug mode
     //#define DEBUGMODE
 #endregion // Preprocessors
 
@@ -155,12 +148,7 @@
     using System;
     using System.Data;
     using System.Diagnostics;
-    // Contains the StringTree class.
-    using vApus.Util;
-    
-    //
-    // Here you can put your own usings under the default ones.
-    //
+    using vApus.Util;//
     using MySql.Data.MySqlClient;
     using System.Threading;
     using System.Collections.Generic;
@@ -182,9 +170,6 @@ namespace vApus.Stresstest {
             System.Boolean _connectionProxySyntaxItem5; // Pooling
             // -- RuleSetFields --
             
-            //
-            // Here you can put labels, for instance, for the index values of the String Tree nodes (eg. int ip = 0).
-            //
             MySqlConnection _connection;
             MySqlCommand _command;
             
@@ -197,16 +182,8 @@ namespace vApus.Stresstest {
         #endregion // Fields
         
         #region Properties
-            public bool IsConnectionOpen {
-                get {
-                    return _connection.State == ConnectionState.Open;
-                }
-            }
-            public bool IsDisposed {
-                get {
-                    return _isDisposed;
-                }
-            }
+            public bool IsConnectionOpen { get { return _connection.State == ConnectionState.Open; } }
+            public bool IsDisposed { get { return _isDisposed; } }
         #endregion // Properties
         
         public ConnectionProxy() {
@@ -264,11 +241,6 @@ namespace vApus.Stresstest {
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together. 
                 //
                 
-                //
-                // Initiate other stuff here.
-                // (eg. Fields or functions from the free coding section.)
-                //
-                
                 if(_w_id == -1){
                     _w_id = _rand.Next(1, _w_id_input + 1);
                 }
@@ -286,10 +258,6 @@ namespace vApus.Stresstest {
                     sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
-                        //
-                        // Send the request to the server here.
-                        //
-                        
                         _command.CommandType = CommandType.StoredProcedure;                        
                         
                         //Picking based on TPC-C doc.
@@ -313,14 +281,15 @@ namespace vApus.Stresstest {
                     }
                     catch(MySqlException sqlEx) {
                         exception = sqlEx;
+                        #if DEBUGMODE
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                        #endif
                     }
                     catch (Exception ex) {
                         exception = ex;
-                    }
-                    finally {
-                        //
-                        // Close stuff if needed.
-                        //                        
+                        #if DEBUGMODE
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                        #endif
                     }
                 }
                 catch {
@@ -344,13 +313,25 @@ namespace vApus.Stresstest {
                     try{
                         // Timeout asap.
                         _command.Cancel();
-                        } catch{}
-                        // #672: Disable CloseConnection() in Dispose()
-                        //CloseConnection();
-                    _connection.Dispose();
-                    _connection = null;
-                    _command.Dispose();
-                    _command = null;
+                    }
+                    catch{
+                    }
+                    try {
+                        if(_connection != null) {
+                            _connection.Dispose();
+                            _connection = null;
+                        }
+                    }
+                    catch {
+                    }
+                    try {
+                        if(_command != null) {
+                            _command.Dispose();
+                            _command = null;
+                        }
+                    }
+                    catch {
+                    }
                 }
             }
         #endregion //Functions
