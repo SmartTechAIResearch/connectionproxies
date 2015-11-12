@@ -248,9 +248,10 @@ namespace vApus.StressTest {
             
             public void CloseConnection() { }
             
-            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
                 exception = null;
+				meta = null;
                 
                 //
                 // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.

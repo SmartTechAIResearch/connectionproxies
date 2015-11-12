@@ -1,0 +1,345 @@
+<ConnectionProxies>
+  <Items>
+    <ConnectionProxy>
+      <Items>
+        <ConnectionProxyRuleSet>
+          <Items>
+            <ConnectionProxySyntaxItem>
+              <Items>
+                <Rule>
+                  <Items />
+                  <RegExp>
+                  </RegExp>
+                  <IgnoreCase>False</IgnoreCase>
+                  <ValueType>stringType</ValueType>
+                  <DisplayAsPassword>False</DisplayAsPassword>
+                  <Description>
+                  </Description>
+                  <Label>
+                  </Label>
+                  <ShowInGui>True</ShowInGui>
+                  <IsDefaultItem>False</IsDefaultItem>
+                  <IsEmpty>False</IsEmpty>
+                </Rule>
+              </Items>
+              <DefaultValue>
+              </DefaultValue>
+              <Description>Provide the hostname, an IPv4 address, or an IPv6 address enclosed in "[ ]". Examples: www.cooldomain.com, 192.168.2.3 or [2001:db8:85a3:8d3:1319:8a2e:370:7348]. This value is overriden with the log's value when #MULTICONNECTION is used.</Description>
+              <Label>Host</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items>
+                <Rule>
+                  <Items />
+                  <RegExp>
+                  </RegExp>
+                  <IgnoreCase>False</IgnoreCase>
+                  <ValueType>stringType</ValueType>
+                  <DisplayAsPassword>False</DisplayAsPassword>
+                  <Description>
+                  </Description>
+                  <Label>
+                  </Label>
+                  <ShowInGui>True</ShowInGui>
+                  <IsDefaultItem>False</IsDefaultItem>
+                  <IsEmpty>False</IsEmpty>
+                </Rule>
+              </Items>
+              <DefaultValue>http</DefaultValue>
+              <Description>Fill in https for example. If nothing is filled in, http is used. This value is overriden with the log's value when #MULTICONNECTION is used.</Description>
+              <Label>Protocol</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items>
+                <Rule>
+                  <Items />
+                  <RegExp>
+                  </RegExp>
+                  <IgnoreCase>False</IgnoreCase>
+                  <ValueType>ushortType</ValueType>
+                  <DisplayAsPassword>False</DisplayAsPassword>
+                  <Description>
+                  </Description>
+                  <Label>
+                  </Label>
+                  <ShowInGui>True</ShowInGui>
+                  <IsDefaultItem>False</IsDefaultItem>
+                  <IsEmpty>False</IsEmpty>
+                </Rule>
+              </Items>
+              <DefaultValue>80</DefaultValue>
+              <Description>Port used to connect to the webserver.By default this is set to 80 (use 443 for https). Beware to update the used port to match the protocol. This value is overriden with the log's value when #MULTICONNECTION is used.</Description>
+              <Label>Port</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items>
+                <Rule>
+                  <Items />
+                  <RegExp>
+                  </RegExp>
+                  <IgnoreCase>False</IgnoreCase>
+                  <ValueType>stringType</ValueType>
+                  <DisplayAsPassword>False</DisplayAsPassword>
+                  <Description>
+                  </Description>
+                  <Label>
+                  </Label>
+                  <ShowInGui>True</ShowInGui>
+                  <IsDefaultItem>False</IsDefaultItem>
+                  <IsEmpty>False</IsEmpty>
+                </Rule>
+              </Items>
+              <DefaultValue>
+              </DefaultValue>
+              <Description>Needed for basic authentication. Comma seperated.</Description>
+              <Label>Trusted urls</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+          </Items>
+          <Connected>False</Connected>
+          <TracertField>1</TracertField>
+          <ChildDelimiter>&lt;16 0C 02 12$&gt;</ChildDelimiter>
+          <Description>
+          </Description>
+          <ShowInGui>True</ShowInGui>
+          <IsDefaultItem>True</IsDefaultItem>
+          <IsEmpty>False</IsEmpty>
+        </ConnectionProxyRuleSet>
+        <ConnectionProxyCode>
+          <Items />
+          <Code>/*
+    ConnectionProxy generated by vApus
+    vApus is Copyrighted by Sizing Servers Lab
+    University College of West-Flanders, Department GKG
+    
+    Note: If you want to edit this connection proxy code you need to know what you are doing. You might break your stress test.
+    
+    -----
+    Make sure you have Firefox 41+ installed in the default installation folder (Program Files(x86)).
+    -----
+    
+    VERSION @BRANCH@-@TM@
+*/
+
+// The following line is used to add references when compiling, you can edit this here or in the references tab page. Please use the 'Browse...' button for dlls that are not in the GAC.
+// dllreferences:HarSharp.dll;HelperSharp.dll;Newtonsoft.Json.dll;Selenium.WebDriverBackedSelenium.dll;SimpleHttpServer.dll;System.Data.dll;System.dll;System.Windows.Forms.dll;ThoughtWorks.Selenium.Core.dll;vApus.Browser.dll;vApus.Browser.Firefox.dll;vApus.StressTest.dll;vApus.Util.dll;WebDriver.dll;WebDriver.Support.dll;System.Web.dll;
+
+#region Preprocessors
+    // Enable debug mode
+    #define DEBUGMODE
+    // When used, the Connection set in vApus will be ignored for the stresstest. The recorded "destination host" is used instead.
+    // This is sometimes necessary if for example authentication is redirected to a secondary server or if cookie-free
+    // subdomains (or CDNs) are used to serve static content.
+    // Note: It is recommended to use this setting when testing a HTTPS website.
+    #define USEMULTICONNECTION
+#endregion // Preprocessors
+
+#region Usings
+    using System;
+    using System.Data;
+    using System.Diagnostics;
+    // Contains the StringTree class.
+    using vApus.Util;
+    
+    using vApus.Browser;
+    using vApus.Browser.Firefox;
+    
+    using HarSharp;
+#endregion // Usings
+
+namespace vApus.StressTest {
+    public class ConnectionProxy : IConnectionProxy {
+        
+        #region Fields
+            Stopwatch _stopwatch = new Stopwatch();
+            bool _isDisposed;
+            // Please do not edit the following lines (RuleSetFields).
+            // -- RuleSetFields --
+            System.String _connectionProxySyntaxItem0 = string.Empty; // Host
+            System.String _connectionProxySyntaxItem1 = "http"; // Protocol [The default value for this syntax item is used if no value is provided in the connection.]
+            System.UInt16 _connectionProxySyntaxItem2 = 80; // Port [The default value for this syntax item is used if no value is provided in the connection.]
+            System.String _connectionProxySyntaxItem3 = string.Empty; // Trusted urls
+            // -- RuleSetFields --
+            
+            Firefox _browser;
+            
+            // A 60 second timeout should be reasonable.
+            const int FETCH_LOG_TIMEOUT_IN_MS = 60000;
+            
+            StringTree _parameterizedRequest;
+            
+            // Labels, for the index values of the StringTree nodes (eg. int ip = 0).
+            enum SyntaxItem {
+                RelativeUrl = 0, RequestMethod, GetData, Protocol, DestinationHost, DestinationPort, Username, Password
+            }
+        #endregion // Fields
+        
+        #region Properties
+            public bool IsConnectionOpen {
+                get {
+                    return _browser != null;
+                }
+            }
+            public bool IsDisposed {
+                get {
+                    return _isDisposed;
+                }
+            }
+        #endregion // Properties
+        
+        public ConnectionProxy() {
+            #if DEBUGMODE
+                EventPanel.AddEvent("Enabled preprocessors:");
+                #if USEMULTICONNECTION
+                    EventPanel.AddEvent("  USEMULTICONNECTION");
+                #endif
+                
+                EventPanel.AddEvent("ConnectionProxy Syntax Items:"
+                + "\n  0: " + _connectionProxySyntaxItem0
+                + "\n  1: " + _connectionProxySyntaxItem1
+                + "\n  2: " + _connectionProxySyntaxItem2
+                + "\n  3: " + _connectionProxySyntaxItem3);
+            #endif
+        }
+        
+        #region Functions
+            public void TestConnection(out string error) {
+                error = null;
+                try {
+                    OpenConnection();
+                    if (IsConnectionOpen) {
+                        CloseConnection();
+                    }
+                    else {
+                        error = "Could not open the connection.";
+                    }
+                }
+                catch (Exception ex) {
+                    error = ex.ToString();
+                }
+            }
+            public void OpenConnection() {
+                if (!IsConnectionOpen) {
+                    _browser = new Firefox(FETCH_LOG_TIMEOUT_IN_MS, "ConnectionProxyPrerequisites\\firebug-2.0.12b1.xpi", "ConnectionProxyPrerequisites\\netExport-0.9b7.xpi");
+                    _browser.InitializeBrowser(GetTrustedUrls());
+                }
+            }
+            public void CloseConnection() {
+                if (IsConnectionOpen) {
+                    _browser.ExitBrowser();
+                    _browser = null;
+                }
+            }
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
+                _parameterizedRequest = parameterizedRequest; 
+                exception             = null;
+                meta                  = null;
+                sentAt                = DateTime.Now;
+                timeToLastByte        = new TimeSpan();
+                
+                //
+                // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
+                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
+                // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together. 
+                //
+                
+                if (_isDisposed) {
+                    return;
+                }
+                
+                Har har = null;
+                try {
+                    _stopwatch.Start();
+                    try {
+                        meta = _browser.Navigate(GetProtocol(), GetDestination(), GetRelUrl(), null, _parameterizedRequest[(int)SyntaxItem.Username].Value, _parameterizedRequest[(int)SyntaxItem.Password].Value);
+                        har  = HarConvert.Deserialize(meta);
+                        
+                        var page = har.Log.Pages[0];
+                        if(page.PageTimings.OnLoad.HasValue){
+                            sentAt         = page.StartedDateTime;
+                            timeToLastByte = new TimeSpan((long)(page.PageTimings.OnLoad * TimeSpan.TicksPerMillisecond).Value);
+                        }
+                        else {
+                            har = null;
+                        }
+                    }
+                    catch (Exception ex) {
+                        exception = ex;
+                    }
+                }
+                catch {
+                    throw;
+                }
+                finally {
+                    _stopwatch.Stop();
+                    if(har == null) {
+                        timeToLastByte = _stopwatch.Elapsed;
+                    }
+                    _stopwatch.Reset();
+                }
+            }
+            public void Dispose() {
+                if (!_isDisposed) {
+                    _isDisposed = true;
+                    CloseConnection();
+                }
+            }
+        #endregion // Functions
+        
+        #region Free Coding
+            private string[] GetTrustedUrls(){
+                return _connectionProxySyntaxItem3.Replace(" ", "").Replace("\t", "").Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            }
+            private Protocol GetProtocol() {
+                string protocol;
+                #if USEMULTICONNECTION
+                    protocol = _parameterizedRequest[(int)SyntaxItem.Protocol].Value;
+                    #else
+                    protocol = _connectionProxySyntaxItem1;
+                #endif
+                
+                return protocol == "http" ? Protocol.http : Protocol.https;
+            }
+            private string GetDestination() {
+                #if USEMULTICONNECTION
+                    return string.Format("{0}:{1}", _parameterizedRequest[(int)SyntaxItem.DestinationHost].Value, _parameterizedRequest[(int)SyntaxItem.DestinationPort].Value);
+                    #else
+                    return string.Format("{0}:{1}", _connectionProxySyntaxItem0, _connectionProxySyntaxItem2);
+                #endif
+            }
+            private string GetRelUrl(){
+                string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
+                string getData = _parameterizedRequest[(int)SyntaxItem.GetData].CombineValues();
+                
+                if(relUrl.Length != 0 &amp;&amp; getData.Length != 0) {
+                    relUrl += "?" + getData;
+                }
+                
+                return relUrl;
+            }
+        #endregion // Free Coding
+    } // ConnectionProxy
+} // vApus.StressTest</Code>
+          <ShowInGui>True</ShowInGui>
+          <IsDefaultItem>True</IsDefaultItem>
+          <IsEmpty>False</IsEmpty>
+        </ConnectionProxyCode>
+      </Items>
+      <Label>Selenium Firefox @BRANCH@-@TM@</Label>
+      <ShowInGui>True</ShowInGui>
+      <IsDefaultItem>False</IsDefaultItem>
+      <IsEmpty>False</IsEmpty>
+    </ConnectionProxy>
+  </Items>
+</ConnectionProxies>
