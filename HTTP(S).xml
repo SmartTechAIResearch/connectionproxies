@@ -221,7 +221,7 @@ namespace vApus.StressTest {
                     _httpWebRequest                   = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}://{1}:{2}", _connectionProxySyntaxItem1, _connectionProxySyntaxItem0, _connectionProxySyntaxItem2)));
                     _httpWebRequest.UserAgent         = "vApus - Test connection function";
                     _httpWebRequest.Timeout           = REQUEST_TIMEOUT_IN_MS;
-                    _httpWebRequest.ReadWriteTimeout  = httpWebRequest.Timeout;
+                    _httpWebRequest.ReadWriteTimeout  = _httpWebRequest.Timeout;
                     _httpWebRequest.AllowAutoRedirect = false;
                     _httpWebRequest.Method            = "GET";
                     _httpWebRequest.ContentLength     = 0;
@@ -237,9 +237,10 @@ namespace vApus.StressTest {
             
             public void CloseConnection() { }
             
-            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
-                exception = null;
+                meta                  = null;
+                exception             = null;
                 
                 //
                 // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
