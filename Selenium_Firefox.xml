@@ -149,6 +149,8 @@
     using System;
     using System.Data;
     using System.Diagnostics;
+    using System.Net;
+    
     // Contains the StringTree class.
     using vApus.Util;
     
@@ -216,14 +218,36 @@ namespace vApus.StressTest {
         #region Functions
             public void TestConnection(out string error) {
                 error = null;
+                TestHttpWebRequest(out error);
+                
+                if(error != null) {
+                    try {
+                        OpenConnection();
+                        if (IsConnectionOpen) {
+                            CloseConnection();
+                        }
+                        else {
+                            error = "Could not open the connection.";
+                        }
+                    }
+                    catch (Exception ex) {
+                        error = ex.ToString();
+                    }
+                }
+            }
+            private void TestHttpWebRequest(out string error) {
+                error = null;
+                
                 try {
-                    OpenConnection();
-                    if (IsConnectionOpen) {
-                        CloseConnection();
-                    }
-                    else {
-                        error = "Could not open the connection.";
-                    }
+                    var httpWebRequest                = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}://{1}:{2}", _connectionProxySyntaxItem1, _connectionProxySyntaxItem0, _connectionProxySyntaxItem2)));
+                    httpWebRequest.UserAgent         = "vApus - Test connection function";
+                    httpWebRequest.Timeout           = FETCH_LOG_TIMEOUT_IN_MS;
+                    httpWebRequest.ReadWriteTimeout  = httpWebRequest.Timeout;
+                    httpWebRequest.AllowAutoRedirect = false;
+                    httpWebRequest.Method            = "GET";
+                    httpWebRequest.ContentLength     = 0;
+                    
+                    var httpWebResponse = httpWebRequest.GetResponse() as HttpWebResponse;
                 }
                 catch (Exception ex) {
                     error = ex.ToString();
