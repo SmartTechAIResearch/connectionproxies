@@ -1,0 +1,671 @@
+<ConnectionProxies>
+  <Items>
+    <ConnectionProxy>
+      <Items>
+        <ConnectionProxyRuleSet>
+          <Items>
+            <ConnectionProxySyntaxItem>
+              <Items />
+              <DefaultValue>www.webpagetest.org</DefaultValue>
+              <Description>Provide the hostname, an IPv4 address, or an IPv6 address enclosed in "[ ]". Examples: www.cooldomain.com, 192.168.2.3 or [2001:db8:85a3:8d3:1319:8a2e:370:7348]. This value is overriden with the log's value when #MULTICONNECTION is used.</Description>
+              <Label>WebPageTest host</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items />
+              <DefaultValue>http</DefaultValue>
+              <Description>Fill in https for example. If nothing is filled in, http is used. This value is overriden with the log's value when #MULTICONNECTION is used.</Description>
+              <Label>Protocol</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items>
+                <Rule>
+                  <Items />
+                  <RegExp>
+                  </RegExp>
+                  <IgnoreCase>False</IgnoreCase>
+                  <ValueType>ushortType</ValueType>
+                  <DisplayAsPassword>False</DisplayAsPassword>
+                  <Description>
+                  </Description>
+                  <Label>
+                  </Label>
+                  <ShowInGui>True</ShowInGui>
+                  <IsDefaultItem>False</IsDefaultItem>
+                  <IsEmpty>False</IsEmpty>
+                </Rule>
+              </Items>
+              <DefaultValue>80</DefaultValue>
+              <Description>Port used to connect to the webserver.By default this is set to 80 (use 443 for https). Beware to update the used port to match the protocol. This value is overriden with the log's value when #MULTICONNECTION is used.</Description>
+              <Label>Port</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items>
+                <Rule>
+                  <Items />
+                  <RegExp>
+                  </RegExp>
+                  <IgnoreCase>False</IgnoreCase>
+                  <ValueType>stringType</ValueType>
+                  <DisplayAsPassword>True</DisplayAsPassword>
+                  <Description>
+                  </Description>
+                  <Label>
+                  </Label>
+                  <ShowInGui>True</ShowInGui>
+                  <IsDefaultItem>False</IsDefaultItem>
+                  <IsEmpty>False</IsEmpty>
+                </Rule>
+              </Items>
+              <DefaultValue>
+              </DefaultValue>
+              <Description>API Key (if assigned) - applies only to runtest.php calls. Contact the site owner for a key if required (http://www.webpagetest.org/getkey.php for the public instance)</Description>
+              <Label>API key</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items />
+              <DefaultValue>
+              </DefaultValue>
+              <Description>Space-delimited list of urls to block (substring match)</Description>
+              <Label>Block</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items />
+              <DefaultValue>
+              </DefaultValue>
+              <Description>User name to use for authenticated tests (http authentication)</Description>
+              <Label>Login</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items>
+                <Rule>
+                  <Items />
+                  <RegExp>
+                  </RegExp>
+                  <IgnoreCase>False</IgnoreCase>
+                  <ValueType>stringType</ValueType>
+                  <DisplayAsPassword>True</DisplayAsPassword>
+                  <Description>
+                  </Description>
+                  <Label>
+                  </Label>
+                  <ShowInGui>True</ShowInGui>
+                  <IsDefaultItem>False</IsDefaultItem>
+                  <IsEmpty>False</IsEmpty>
+                </Rule>
+              </Items>
+              <DefaultValue>
+              </DefaultValue>
+              <Description>Password to use for authenticated tests (http authentication)</Description>
+              <Label>Password</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items />
+              <DefaultValue>Basic</DefaultValue>
+              <Description>Type of authentication to use: Basic or SNS</Description>
+              <Label>Authentication type</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items />
+              <DefaultValue>Dulles:Firefox</DefaultValue>
+              <Description>Check the available public ones for your key here http://www.webpagetest.org/getLocations.php?f=html&amp;k=A.****</Description>
+              <Label>Location</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items />
+              <DefaultValue>Cable</DefaultValue>
+              <Description>DSL - 1.5 Mbps down, 384 Kbps up, 50 ms first-hop RTT, 0% packet loss. Cable - 5 Mbps down, 1 Mbps up, 28ms first-hop RTT, 0% packet loss. FIOS - 20 Mbps down, 5 Mbps up, 4 ms first-hop RTT, 0% packet loss (not all locations will get the full bandwidth). Dial - 49 Kbps down, 30 Kbps up, 120 ms first-hop RTT, 0% packet loss. 3G - 1.6 Mbps down, 768 Kbps up, 300 ms first-hop RTT, 0% packet loss. 3GFast - 1.6 Mbps down, 768 Kbps up, 150 ms first-hop RTT, 0% packet loss. Native - No synthetic traffic shaping applied. custom - Custom profile, bandwidth and latency must also be specified using the bwIn, bwOut, latency and plr parameters.</Description>
+              <Label>Connectivity</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items />
+              <DefaultValue>
+              </DefaultValue>
+              <Description>When Connectivity is set to 'custom'. bwDown=&amp;bwUp=&amp;latency=&amp;plr=</Description>
+              <Label>Custom connectivity parameters</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+            <ConnectionProxySyntaxItem>
+              <Items>
+                <Rule>
+                  <Items />
+                  <RegExp>
+                  </RegExp>
+                  <IgnoreCase>False</IgnoreCase>
+                  <ValueType>boolType</ValueType>
+                  <DisplayAsPassword>False</DisplayAsPassword>
+                  <Description>
+                  </Description>
+                  <Label>
+                  </Label>
+                  <ShowInGui>True</ShowInGui>
+                  <IsDefaultItem>False</IsDefaultItem>
+                  <IsEmpty>False</IsEmpty>
+                </Rule>
+              </Items>
+              <DefaultValue>False</DefaultValue>
+              <Description>Set to True to have Chrome emulate a mobile browser (screen resolution, UA string, fixed viewport). </Description>
+              <Label>Mobile Chrome</Label>
+              <ShowInGui>True</ShowInGui>
+              <IsDefaultItem>False</IsDefaultItem>
+              <IsEmpty>False</IsEmpty>
+            </ConnectionProxySyntaxItem>
+          </Items>
+          <Connected>False</Connected>
+          <TracertField>1</TracertField>
+          <ChildDelimiter>&lt;16 0C 02 12$&gt;</ChildDelimiter>
+          <Description>https://sites.google.com/a/webpagetest.org/docs/advanced-features/webpagetest-restful-apis</Description>
+          <ShowInGui>True</ShowInGui>
+          <IsDefaultItem>False</IsDefaultItem>
+          <IsEmpty>False</IsEmpty>
+        </ConnectionProxyRuleSet>
+        <ConnectionProxyCode>
+          <Items />
+          <Code>/*
+    ConnectionProxy generated by vApus
+    vApus is Copyrighted by Sizing Servers Lab
+    University College of West-Flanders, Department GKG
+    
+    Note: If you want to edit this connection proxy code you need to know what you are doing. You might break your stresstest.
+    
+    VERSION @BRANCH@-@TM@
+*/
+
+// The following line is used to add references when compiling, you can edit this here or in the references tab page. Please use the 'Browse...' button for dlls that are not in the GAC.
+// dllreferences:System.Core.dll;System.Data.dll;System.dll;System.Web.dll;System.Windows.Forms.dll;vApus.Stresstest.dll;vApus.Util.dll;Newtonsoft.Json.dll;Microsoft.CSharp.dll;
+
+#region Preprocessors
+    // Enable debug mode
+    #define DEBUGMODE
+#endregion // Preprocessors
+
+#region Usings
+    using System;
+    using System.Data;
+    using System.Diagnostics;
+    using System.IO;
+    using System.IO.Compression;
+    using System.Linq;
+    using System.Net;
+    using System.Net.NetworkInformation;
+    using System.Net.Security;
+    using System.Text;
+    using System.Threading;
+    using System.Web;
+    using System.Windows.Forms;
+    using System.Security.Cryptography.X509Certificates;
+    using vApus.Util;
+    using Newtonsoft.Json.Linq;
+#endregion // Usings
+
+namespace vApus.StressTest {
+    public class ConnectionProxy : IConnectionProxy {
+        
+        #region Fields
+            Stopwatch _stopwatch = new Stopwatch();
+            bool _isDisposed;
+            // Please do not edit the following lines (RuleSetFields).
+            // -- RuleSetFields --
+            System.String _connectionProxySyntaxItem0 = "www.webpagetest.org"; // WebPageTest host [The default value for this syntax item is used if no value is provided in the connection.]
+            System.String _connectionProxySyntaxItem1 = "http"; // Protocol [The default value for this syntax item is used if no value is provided in the connection.]
+            System.UInt16 _connectionProxySyntaxItem2 = 80; // Port [The default value for this syntax item is used if no value is provided in the connection.]
+            System.String _connectionProxySyntaxItem3 = string.Empty; // API key
+            System.String _connectionProxySyntaxItem4 = string.Empty; // Block
+            System.String _connectionProxySyntaxItem5 = string.Empty; // Login
+            System.String _connectionProxySyntaxItem6 = string.Empty; // Password
+            System.String _connectionProxySyntaxItem7 = "Basic"; // Authentication type [The default value for this syntax item is used if no value is provided in the connection.]
+            System.String _connectionProxySyntaxItem8 = "Dulles:Firefox"; // Location [The default value for this syntax item is used if no value is provided in the connection.]
+            System.String _connectionProxySyntaxItem9 = "Cable"; // Connectivity [The default value for this syntax item is used if no value is provided in the connection.]
+            System.String _connectionProxySyntaxItem10 = string.Empty; // Custom connectivity parameters
+            System.Boolean _connectionProxySyntaxItem11 = false; // Mobile Chrome [The default value for this syntax item is used if no value is provided in the connection.]
+            // -- RuleSetFields --
+            
+            string _connection;
+            StringTree _parameterizedRequest;
+            HttpWebRequest _httpWebRequest;
+            HttpWebResponse _httpWebResponse;
+            StreamReader _streamReader;
+            
+            
+            AutoResetEvent _waitForTestCompleteWaitHandle = new AutoResetEvent(false);
+            
+            // A 60 seconds timeout should be reasonable.
+            const int REQUEST_TIMEOUT_IN_MS = 60000;
+            
+            
+            const int TEST_COMPLETE_TIMEOUT_IN_MS = 3600000;
+            
+            // Labels, for the index values of the StringTree nodes (eg. int ip = 0).
+            enum SyntaxItem {
+                Url = 0, DomElement, Script
+            }
+            
+            //To use the post data bytes instead of the text. For instance, to upload an image. Insert relative URLs here.
+            string[] _postDataAsBytesRelativeUrls = { };
+        #endregion // Fields
+        
+        #region Properties
+            public bool IsConnectionOpen { get { return true; } }
+            public bool IsDisposed { get { return _isDisposed; } }
+        #endregion // Properties
+        
+        public ConnectionProxy() {
+            // Trust all certificates for https testing.
+            ServicePointManager.ServerCertificateValidationCallback = (object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors errors) =&gt; { return true; };
+            
+            #if DEBUGMODE
+                EventPanel.AddEvent("ConnectionProxy Syntax Items:"
+                + "\n  0: " + _connectionProxySyntaxItem0
+                + "\n  1: " + _connectionProxySyntaxItem1
+                + "\n  2: " + _connectionProxySyntaxItem2);
+            #endif
+        }
+        
+        #region Functions
+            public void TestConnection(out string error) {
+                error = null;
+                
+                try {
+                    _httpWebRequest                   = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}://{1}:{2}", _connectionProxySyntaxItem1, _connectionProxySyntaxItem0, _connectionProxySyntaxItem2)));
+                    _httpWebRequest.UserAgent         = "vApus - Test connection function";
+                    _httpWebRequest.Timeout           = REQUEST_TIMEOUT_IN_MS;
+                    _httpWebRequest.ReadWriteTimeout  = _httpWebRequest.Timeout;
+                    _httpWebRequest.AllowAutoRedirect = false;
+                    _httpWebRequest.Method            = "GET";
+                    _httpWebRequest.ContentLength     = 0;
+                    
+                    _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
+                }
+                catch (Exception ex) {
+                    error = ex.ToString();
+                }
+            }
+            
+            public void OpenConnection() { }
+            
+            public void CloseConnection() { }
+            
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
+                _parameterizedRequest = parameterizedRequest;
+                sentAt = DateTime.Now;
+                meta                  = null;
+                exception             = null;
+                
+                //
+                // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
+                // String Tree is a simple class: it can have either a value (property: string Value) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
+                // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
+                //
+                
+                if (_isDisposed) {
+                    timeToLastByte = new TimeSpan();
+                    return;
+                }
+                try {
+                    _stopwatch.Start();
+                    try {
+                        string response = Browse(CreateRunTestUri());
+                        
+                        #if DEBUGMODE
+                            EventPanel.AddEvent("Start info: " + response);
+                        #endif
+                        
+                        string testId = FetchTestId(response);
+                        
+                        WaitForTestComplete(testId);
+                        
+                        meta = GetTestResults(testId, out timeToLastByte);
+                    }
+                    catch (Exception ex) {
+                        exception = ex;
+                        #if DEBUGMODE
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
+                        #endif
+                    }
+                }
+                catch {
+                    //
+                    // Always throw the exception, if any, if 'stuff' cannot be closed.
+                    // vApus will handle it as a connection problem.
+                    //
+                    
+                    throw;
+                }
+                finally {
+                    _stopwatch.Stop();
+                    timeToLastByte = _stopwatch.Elapsed;
+                    _stopwatch.Reset();
+                }
+            }
+            
+            public void Dispose() {
+                if (!_isDisposed) {
+                    _isDisposed = true;
+                    try {
+                        // Timeout immediately.
+                        if(_httpWebRequest != null){
+                            _httpWebRequest.Abort();
+                        }
+                    } 
+                    catch { }
+                    _httpWebRequest  = null;
+                    _httpWebResponse = null;
+                    if (_streamReader != null) {
+                        try {
+                            _streamReader.Close();
+                            _streamReader.Dispose();
+                            _streamReader = null;
+                        } 
+                        catch {
+                        }
+                    }
+                    
+                    if(_waitForTestCompleteWaitHandle != null){
+                        _waitForTestCompleteWaitHandle.Set();
+                        _waitForTestCompleteWaitHandle.Dispose();
+                        _waitForTestCompleteWaitHandle = null;
+                    }
+                }
+            }
+        #endregion // Functions
+        
+        #region Free Coding
+            //Returns the response
+            private string Browse(Uri uri) {
+                try{
+                    _httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
+                    // Set the HTTP request method (GET/POST).
+                    _httpWebRequest.Method = "GET";
+                    // Set the User Agent.
+                    _httpWebRequest.UserAgent        = "vApus";            
+                    _httpWebRequest.Timeout          = REQUEST_TIMEOUT_IN_MS;
+                    _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
+                    // Allow keepalive.
+                    _httpWebRequest.KeepAlive = true;
+                    // Allow compression.
+                    _httpWebRequest.Headers.Add("Accept-Encoding: gzip, deflate");
+                    // Set the Accept-Language header.
+                    _httpWebRequest.Headers.Add("Accept-Language: en-US");
+                    // Don't autoredirect: redirects are already recorded.
+                    _httpWebRequest.AllowAutoRedirect = false;
+                    // Set the initial content length to 0.
+                    _httpWebRequest.ContentLength = 0;
+                    // Send post data with the same request.
+                    _httpWebRequest.ServicePoint.Expect100Continue = false;
+                    // Set the connection limit to our concurrency.
+                    _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
+                    
+                    
+                    _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
+                    
+                    if (_httpWebResponse.ContentEncoding.ToLower().Contains("gzip")) {
+                        _streamReader = new StreamReader(new GZipStream(_httpWebResponse.GetResponseStream(), CompressionMode.Decompress));
+                    }
+                    else if(_httpWebResponse.ContentEncoding.ToLower().Contains("deflate")){
+                        _streamReader = new StreamReader(new DeflateStream(_httpWebResponse.GetResponseStream(), CompressionMode.Decompress));
+                    }
+                    else {
+                        _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), _httpWebResponse.ContentEncoding.Length != 0 ?
+                        System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
+                    }
+                    
+                    
+                    return _streamReader.ReadToEnd();
+                }
+                finally {
+                    if (_streamReader != null) {
+                        try {
+                            _streamReader.Close();
+                            _streamReader.Dispose();
+                        }
+                        finally {
+                            _streamReader = null;
+                        }
+                    }
+                }
+            }
+            
+            private string GetConnection(){
+                return _connection ?? (_connection = string.Format("{0}://{1}:{2}", _connectionProxySyntaxItem1, _connectionProxySyntaxItem0, _connectionProxySyntaxItem2)); //procol, host, port.
+            }
+            
+            private Uri CreateRunTestUri() {
+                StringBuilder sb = new StringBuilder(GetConnection());
+                sb.Append("/runtest.php?private=1&amp;f=json&amp;video=1"); //Do not show in the log, return json, make video.
+                
+                ExclusiveAppend(sb, "k",_connectionProxySyntaxItem3); //API key
+                InclusiveAppend(sb, "url", _parameterizedRequest[(int)SyntaxItem.Url].Value); //Url to test
+                ExclusiveAppend(sb, "domelement", _parameterizedRequest[(int)SyntaxItem.DomElement].Value); //Dom element to set that can be used in the script
+                ExclusiveAppend(sb, "script", _parameterizedRequest[(int)SyntaxItem.Script].Value); //Scripted test to execute. https://sites.google.com/a/webpagetest.org/docs/using-webpagetest/scripting
+                
+                ExclusiveAppend(sb, "block", _connectionProxySyntaxItem4); //block urls
+                
+                if(!string.IsNullOrEmpty(_connectionProxySyntaxItem5)){ //login
+                    ExclusiveAppend(sb, "login", _connectionProxySyntaxItem5);
+                    ExclusiveAppend(sb, "password", _connectionProxySyntaxItem6);
+                    ExclusiveAppend(sb, "authType", _connectionProxySyntaxItem7);
+                }
+                
+                if(!string.IsNullOrEmpty(_connectionProxySyntaxItem8)){ //location + browser + connectivity
+                    ExclusiveAppend(sb, "location", _connectionProxySyntaxItem8);
+                    if(!string.IsNullOrEmpty(_connectionProxySyntaxItem9)){
+                        sb.Append(".");
+                        sb.Append(_connectionProxySyntaxItem9);
+                        
+                        if(_connectionProxySyntaxItem8 == "custom" &amp;&amp; !string.IsNullOrEmpty(_connectionProxySyntaxItem10)) {
+                            sb.Append(_connectionProxySyntaxItem10);
+                        }
+                    }
+                }
+                
+                ExclusiveAppend(sb, "mobile", _connectionProxySyntaxItem11 ? "1" : "0");
+                
+                string uri = sb.ToString();
+                
+                #if DEBUGMODE
+                    EventPanel.AddEvent("Run test request: " + uri);
+                #endif
+                
+                return new Uri(uri);
+            }
+            
+            
+            private void InclusiveAppend(StringBuilder sb, string key, string value, bool escape = false){
+                if(string.IsNullOrWhiteSpace(value)){
+                    throw new Exception("No value given for " + key);
+                }
+                sb.Append("&amp;");
+                sb.Append(key);
+                sb.Append("=");
+                
+                if(escape){
+                    value = Uri.EscapeUriString(value);
+                }
+                sb.Append(value);
+            }
+            private void ExclusiveAppend(StringBuilder sb, string key, string value, bool escape = false){
+                if(!string.IsNullOrWhiteSpace(value)){
+                    sb.Append("&amp;");
+                    sb.Append(key);
+                    sb.Append("=");
+                    
+                    if(escape){
+                        value = Uri.EscapeUriString(value);
+                    }
+                    sb.Append(value);
+                }
+            }
+            
+            private string FetchTestId(string response){
+                var info = JObject.Parse(response);
+                
+                if((int)info["statusCode"] != 200) {
+                    throw new Exception("Failed to start the WebPageTest. " + ((string)info["statusText"]));
+                }
+                
+                return (string)info["data"]["testId"]; 
+            }
+            
+            private void WaitForTestComplete(string testId){
+                var uri = CreateTestStatusUri(testId);
+                int waitedMs = 0;
+                while(!_isDisposed){
+                    string response = Browse(uri);
+                    
+                    var info = JObject.Parse(response);
+                    
+                    int statusCode = (int)info["statusCode"];
+                    
+                    #if DEBUGMODE
+                        EventPanel.AddEvent((string)info["statusText"]);
+                    #endif 
+                    
+                    if(statusCode &lt; 200) {
+                        if(waitedMs &gt;= TEST_COMPLETE_TIMEOUT_IN_MS) {
+                            throw new Exception("Waiting for the test to complete timed out. (timeout = " + (TEST_COMPLETE_TIMEOUT_IN_MS / 60000) + " minutes)");
+                        }
+                        
+                        _waitForTestCompleteWaitHandle.WaitOne(5000);
+                        waitedMs += 5000;
+                    }
+                    else if (statusCode &gt; 200){
+                        throw new Exception("The WebPageTest threw an exception. " + ((string)info["statusText"]));
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+            
+            private Uri CreateTestStatusUri(string testId){
+                StringBuilder sb = new StringBuilder(GetConnection());
+                sb.Append("/testStatus.php?f=json&amp;test=");
+                sb.Append(testId);
+                
+                string uri = sb.ToString();
+                
+                #if DEBUGMODE
+                    EventPanel.AddEvent("Test status request: " + uri);
+                #endif
+                
+                return new Uri(uri);
+            }
+            
+            private string GetTestResults(string testId, out TimeSpan timeToLastByte){
+                string response = Browse(CreateJsonResultUri(testId));
+                
+                var info = JObject.Parse(response);
+                
+                var ttlbs = new long[2];
+                ttlbs[0] = (long)info["data"]["average"]["firstView"]["fullyLoaded"];
+                ttlbs[1] = (long)info["data"]["average"]["repeatView"]["fullyLoaded"];
+                
+                timeToLastByte = new TimeSpan((long)(ttlbs.Average() * TimeSpan.TicksPerMillisecond));
+                
+                dynamic json = new JObject();
+                json.rawPage     = Browse(CreatePageCsvUri(testId));
+                json.rawRequests = Browse(CreateRequestsCsvUri(testId));
+                json.har         = Browse(CreateHarUri(testId));
+                return json.ToString();
+            }
+            private Uri CreateJsonResultUri(string testId){
+                StringBuilder sb = new StringBuilder(GetConnection());
+                sb.Append("/jsonResult.php?test=");
+                sb.Append(testId);
+                
+                string uri = sb.ToString();
+                
+                #if DEBUGMODE
+                    EventPanel.AddEvent("Json result request: " + uri);
+                #endif
+                
+                return new Uri(uri);
+            }
+            private Uri CreatePageCsvUri(string testId){
+                StringBuilder sb = new StringBuilder(GetConnection());
+                sb.Append("/result/");
+                sb.Append(testId);
+                sb.Append("/page_data.csv");
+                
+                string uri = sb.ToString();
+                
+                #if DEBUGMODE
+                    EventPanel.AddEvent("Page data request: " + uri);
+                #endif
+                
+                return new Uri(uri);
+            }
+            private Uri CreateRequestsCsvUri(string testId){
+                StringBuilder sb = new StringBuilder(GetConnection());
+                sb.Append("/result/");
+                sb.Append(testId);
+                sb.Append("/requests.csv");
+                
+                string uri = sb.ToString();
+                
+                #if DEBUGMODE
+                    EventPanel.AddEvent("Requests request: " + uri);
+                #endif
+                
+                return new Uri(uri);
+            }
+            private Uri CreateHarUri(string testId){
+                StringBuilder sb = new StringBuilder(GetConnection());
+                sb.Append("/export.php?bodies=1&amp;pretty=1&amp;test=");
+                sb.Append(testId);
+                
+                string uri = sb.ToString();
+                
+                #if DEBUGMODE
+                    EventPanel.AddEvent("Har request: " + uri);
+                #endif
+                
+                return new Uri(uri);
+            }
+        #endregion // Free Coding
+    } // ConnectionProxy
+    
+} // vApus.Stresstest</Code>
+          <ShowInGui>True</ShowInGui>
+          <IsDefaultItem>False</IsDefaultItem>
+          <IsEmpty>False</IsEmpty>
+        </ConnectionProxyCode>
+      </Items>
+      <Label>WebPageTest @BRANCH@-@TM@</Label>
+      <ShowInGui>True</ShowInGui>
+      <IsDefaultItem>False</IsDefaultItem>
+      <IsEmpty>False</IsEmpty>
+    </ConnectionProxy>
+  </Items>
+</ConnectionProxies>
