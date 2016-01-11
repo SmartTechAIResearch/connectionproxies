@@ -120,7 +120,7 @@
     // This is sometimes necessary if for example authentication is redirected to a secondary server or if cookie-free
     // subdomains (or CDNs) are used to serve static content.
     // Note: It is recommended to use this setting when testing a HTTPS website.
-    //#define USEMULTICONNECTION
+    #define USEMULTICONNECTION
     
     // Set the recorded Referer HTTP header in requests.
     //#define USEREFERER
