@@ -207,7 +207,9 @@
 
 #region Preprocessors
     // Enable debug mode
-    //#define DEBUGMODE
+    #define DEBUGMODE
+    //Enable progress indication. Should only be enabled when testing with one concurrency. (And you should test only with one concurrency!)
+    #define INDICATETESTPROGRESS
 #endregion // Preprocessors
 
 #region Usings
@@ -263,8 +265,13 @@ namespace vApus.StressTest {
             // A 60 seconds timeout should be reasonable.
             const int REQUEST_TIMEOUT_IN_MS = 60000;
             
+            //Check the test status every 5 seconds with a test complete timeout of 10 minutes.
+            const int TEST_POLL_STATUS_DELAY = 5000;
+            const int TEST_COMPLETE_TIMEOUT_IN_MS = 600000;
             
-            const int TEST_COMPLETE_TIMEOUT_IN_MS = 3600000;
+            #if (DEBUGMODE || INDICATETESTPROGRESS)
+                const int TEST_NOTIFY_PROGRESS_DELAY = 20000;
+            #endif
             
             // Labels, for the index values of the StringTree nodes (eg. int ip = 0).
             enum SyntaxItem {
@@ -337,7 +344,7 @@ namespace vApus.StressTest {
                     try {
                         string response = Browse(CreateRunTestUri());
                         
-                        #if DEBUGMODE
+                        #if (DEBUGMODE || INDICATETESTPROGRESS)
                             EventPanel.AddEvent("Start info: " + response);
                         #endif
                         
@@ -349,7 +356,7 @@ namespace vApus.StressTest {
                     }
                     catch (Exception ex) {
                         exception = ex;
-                        #if DEBUGMODE
+                        #if (DEBUGMODE || INDICATETESTPROGRESS)
                             EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
                         #endif
                     }
@@ -547,8 +554,10 @@ namespace vApus.StressTest {
                     
                     int statusCode = (int)info["statusCode"];
                     
-                    #if DEBUGMODE
-                        EventPanel.AddEvent((string)info["statusText"]);
+                    #if (DEBUGMODE || INDICATETESTPROGRESS)
+                        if((((double)waitedMs) % TEST_NOTIFY_PROGRESS_DELAY) == 0) {
+                            EventPanel.AddEvent((string)info["statusText"]);
+                        }
                     #endif 
                     
                     if(statusCode &lt; 200) {
@@ -556,8 +565,8 @@ namespace vApus.StressTest {
                             throw new Exception("Waiting for the test to complete timed out. (timeout = " + (TEST_COMPLETE_TIMEOUT_IN_MS / 60000) + " minutes)");
                         }
                         
-                        _waitForTestCompleteWaitHandle.WaitOne(5000);
-                        waitedMs += 5000;
+                        _waitForTestCompleteWaitHandle.WaitOne(TEST_POLL_STATUS_DELAY);
+                        waitedMs += TEST_POLL_STATUS_DELAY;
                     }
                     else if (statusCode &gt; 200){
                         throw new Exception("The WebPageTest threw an exception. " + ((string)info["statusText"]));
@@ -593,11 +602,12 @@ namespace vApus.StressTest {
                 
                 timeToLastByte = new TimeSpan((long)(ttlbs.Average() * TimeSpan.TicksPerMillisecond));
                 
-                dynamic json = new JObject();
-                json.rawPage     = Browse(CreatePageCsvUri(testId));
-                json.rawRequests = Browse(CreateRequestsCsvUri(testId));
-                json.har         = Browse(CreateHarUri(testId));
-                return json.ToString();
+                dynamic meta = new JObject();
+                meta.type        = "WebPageTest"; //Define the type for correct vizualization of the meta.
+                meta.rawPage     = Browse(CreatePageCsvUri(testId));
+                meta.rawRequests = Browse(CreateRequestsCsvUri(testId));
+                meta.har         = Browse(CreateHarUri(testId));
+                return meta.ToString();
             }
             private Uri CreateJsonResultUri(string testId){
                 StringBuilder sb = new StringBuilder(GetConnection());
