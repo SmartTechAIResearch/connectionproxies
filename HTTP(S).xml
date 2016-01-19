@@ -99,7 +99,7 @@
     
     Note: If you want to edit this connection proxy code you need to know what you are doing. You might break your stresstest.
     
-    VERSION @BRANCH-@TM
+    VERSION @BRANCH@-@TM@
 */
 
 // The following line is used to add references when compiling, you can edit this here or in the references tab page. Please use the 'Browse...' button for dlls that are not in the GAC.
@@ -609,7 +609,7 @@ namespace vApus.StressTest {
           <IsEmpty>False</IsEmpty>
         </ConnectionProxyCode>
       </Items>
-      <Label>HTTP(S) @BRANCH-@TM</Label>
+      <Label>HTTP(S) @BRANCH@-@TM@</Label>
       <ShowInGui>True</ShowInGui>
       <IsDefaultItem>False</IsDefaultItem>
       <IsEmpty>False</IsEmpty>
