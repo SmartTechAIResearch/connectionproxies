@@ -155,7 +155,7 @@ namespace vApus.StressTest {
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
                 
-                sentAt         = new DateTime(Stopwatch.GetTimestamp());
+                sentAt = HighResolutionDateTime.UtcNow;
                 
                 if (_isDisposed) {
                     timeToLastByte = new TimeSpan();

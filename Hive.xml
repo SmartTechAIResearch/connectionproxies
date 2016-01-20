@@ -154,7 +154,7 @@ namespace vApus.StressTest {
                 
                 _command.CommandText = parameterizedRequest.Value;
                 
-                sentAt         = new DateTime(Stopwatch.GetTimestamp());
+                sentAt = HighResolutionDateTime.UtcNow;
                 if (_isDisposed) {
                     timeToLastByte = new TimeSpan();
                     return;

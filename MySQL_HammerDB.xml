@@ -249,7 +249,7 @@ namespace vApus.StressTest {
                     _stock_level_d_id = _rand.Next(1, _d_id_input + 1);
                 }
                 
-                sentAt         = new DateTime(Stopwatch.GetTimestamp());
+                sentAt = HighResolutionDateTime.UtcNow;
                 if (_isDisposed) {
                     timeToLastByte = new TimeSpan();
                     return;

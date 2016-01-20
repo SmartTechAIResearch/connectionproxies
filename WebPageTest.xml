@@ -325,7 +325,7 @@ namespace vApus.StressTest {
             
             public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
-                sentAt         = new DateTime(Stopwatch.GetTimestamp());
+                sentAt = HighResolutionDateTime.UtcNow;
                 meta                  = null;
                 exception             = null;
                 
