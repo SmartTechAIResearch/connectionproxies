@@ -153,7 +153,7 @@ namespace vApus.StressTest {
             public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
                 exception = null;
-				meta = null;
+                meta = null;
                 
                 //
                 // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
@@ -161,14 +161,12 @@ namespace vApus.StressTest {
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
                 
-                
+                sentAt         = new DateTime(Stopwatch.GetTimestamp());
                 if (_isDisposed) {
-                    sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();
                     return;
                 }
                 try {
-                    sentAt = DateTime.Now;
                     _stopwatch.Start();
                     Stream stream = null;
                     try {

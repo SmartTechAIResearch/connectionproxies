@@ -269,7 +269,7 @@ namespace vApus.StressTest {
                 _parameterizedRequest = parameterizedRequest; 
                 exception             = null;
                 meta                  = null;
-                sentAt                = DateTime.Now;
+                sentAt         = new DateTime(Stopwatch.GetTimestamp());
                 timeToLastByte        = new TimeSpan();
                 
                 //

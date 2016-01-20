@@ -207,7 +207,7 @@
 
 #region Preprocessors
     // Enable debug mode
-    #define DEBUGMODE
+    //#define DEBUGMODE
     //Enable progress indication. Should only be enabled when testing with one concurrency. (And you should test only with one concurrency!)
     #define INDICATETESTPROGRESS
 #endregion // Preprocessors
@@ -325,7 +325,7 @@ namespace vApus.StressTest {
             
             public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
-                sentAt = DateTime.Now;
+                sentAt         = new DateTime(Stopwatch.GetTimestamp());
                 meta                  = null;
                 exception             = null;
                 

@@ -253,7 +253,7 @@ namespace vApus.StressTest
             public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
                 exception = null;
-				meta = null;
+                meta = null;
                 
                 //
                 // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
@@ -261,13 +261,12 @@ namespace vApus.StressTest
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
                 
+                sentAt         = new DateTime(Stopwatch.GetTimestamp());
                 if (_isDisposed) {
-                    sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();
                     return;
                 }
                 try {
-                    sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
                         InitHttpWebRequest();
@@ -387,7 +386,7 @@ namespace vApus.StressTest
             }
             
             private void ApplyPostData() {
-                string postData = _parameterizedRequest[(int)SyntaxItem.PostData].Value;
+                string postData = _parameterizedRequest[(int)SyntaxItem.PostDataUtf8].Value;
                 if (postData.Length != 0) {
                     _httpWebRequest.ContentLength = postData.Length;
                     _httpWebRequest.ContentType   = String.IsNullOrEmpty(_parameterizedRequest[(int)SyntaxItem.ContentType].Value) ? "application/x-www-form-urlencoded" : _parameterizedRequest[(int)SyntaxItem.ContentType].Value;

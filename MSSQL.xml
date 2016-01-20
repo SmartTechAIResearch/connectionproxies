@@ -223,7 +223,7 @@ namespace vApus.StressTest {
             }
             public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 exception = null;
-				meta = null;
+                meta = null;
                 
                 //
                 // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
@@ -232,13 +232,13 @@ namespace vApus.StressTest {
                 //
                 
                 _command.CommandText = parameterizedRequest.Value;
+                
+                sentAt         = new DateTime(Stopwatch.GetTimestamp());
                 if (_isDisposed) {
-                    sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();
                     return;
                 }
                 try {
-                    sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
                         _reader = _command.ExecuteReader();
