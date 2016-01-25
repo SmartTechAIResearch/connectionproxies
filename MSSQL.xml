@@ -22,7 +22,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>intType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -67,7 +67,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>True</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -93,7 +93,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>boolType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -157,7 +157,7 @@
     using System.Data.SqlClient;
 #endregion // Usings
 
-namespace vApus.Stresstest {
+namespace vApus.StressTest {
     public class ConnectionProxy : IConnectionProxy {
         
         #region Fields
@@ -173,7 +173,6 @@ namespace vApus.Stresstest {
             System.Boolean _connectionProxySyntaxItem5 = false; // Pooling [The default value for this syntax item is used if no value is provided in the connection.]
             System.String _connectionProxySyntaxItem6 = "dbmssocn"; // Network Library [The default value for this syntax item is used if no value is provided in the connection.]
             // -- RuleSetFields --
-            
             
             SqlConnection _connection;
             SqlCommand _command;
@@ -222,23 +221,24 @@ namespace vApus.Stresstest {
                     _connection.Close();
                 }
             }
-            public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 exception = null;
+                meta = null;
                 
                 //
-                // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
-                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
+                // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
+                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together. 
                 //
                 
-                _command.CommandText = parameterizedLogEntry.Value;
+                _command.CommandText = parameterizedRequest.Value;
+                
+                sentAt = HighResolutionDateTime.UtcNow;
                 if (_isDisposed) {
-                    sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();
                     return;
                 }
                 try {
-                    sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
                         _reader = _command.ExecuteReader();
@@ -246,7 +246,7 @@ namespace vApus.Stresstest {
                     catch (Exception ex) {
                         exception = ex;
                         #if DEBUGMODE
-                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
                         #endif
                     }
                     finally {

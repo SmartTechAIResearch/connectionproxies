@@ -12,7 +12,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>http://</Label>
@@ -81,7 +81,7 @@
     using System.Security.Cryptography.X509Certificates;
 #endregion // Usings
 
-namespace vApus.Stresstest {
+namespace vApus.StressTest {
     public class ConnectionProxy : IConnectionProxy {
         
         #region Fields
@@ -93,7 +93,7 @@ namespace vApus.Stresstest {
             System.String _connectionProxySyntaxItem1 = string.Empty; // Content Type
             // -- RuleSetFields --
             
-            StringTree _parameterizedLogEntry;
+            StringTree _parameterizedRequest;
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
             CookieCollection _cookies;
@@ -150,34 +150,33 @@ namespace vApus.Stresstest {
             
             public void CloseConnection() { }
             
-            public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
-                _parameterizedLogEntry = parameterizedLogEntry;
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
+                _parameterizedRequest = parameterizedRequest;
                 exception = null;
+                meta = null;
                 
                 //
-                // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
-                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
+                // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
+                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
                 
-                
+                sentAt = HighResolutionDateTime.UtcNow;
                 if (_isDisposed) {
-                    sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();
                     return;
                 }
                 try {
-                    sentAt = DateTime.Now;
                     _stopwatch.Start();
                     Stream stream = null;
                     try {
-                        string logEntry = _parameterizedLogEntry[_bytes].Value;
+                        string request = _parameterizedRequest[_bytes].Value;
                         
                         // A parameterizing solution.
                         // string find = "foo";
-                        // int index = logEntry.IndexOf(find);
+                        // int index = request.IndexOf(find);
                         
-                        byte[] bytes = ParseLogEntryToBytes(logEntry);
+                        byte[] bytes = ParseRequestToBytes(request);
                         
                         // bytes = RemoveAt(bytes, index, find.Length);
                         // bytes = InsertAt(bytes, index, "bar");
@@ -217,7 +216,7 @@ namespace vApus.Stresstest {
                     catch (Exception ex) {
                         exception = ex;
                         #if DEBUGMODE
-                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
                         #endif
                     }
                     finally {
@@ -274,7 +273,7 @@ namespace vApus.Stresstest {
         #endregion // Functions
         
         #region Free Coding
-            private byte[] ParseLogEntryToBytes(string s) {
+            private byte[] ParseRequestToBytes(string s) {
                 string[] array = s.Split(',');
                 byte[] bytes = new byte[array.Length];
                 

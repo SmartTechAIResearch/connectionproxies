@@ -22,7 +22,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>intType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -67,7 +67,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>True</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -94,7 +94,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>boolType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -162,7 +162,7 @@
     using System.Threading;
 #endregion // Usings
 
-namespace vApus.Stresstest {
+namespace vApus.StressTest {
     public class ConnectionProxy : IConnectionProxy {
         
         #region Fields
@@ -242,12 +242,13 @@ namespace vApus.Stresstest {
                     _connection.Close();
                 }
             }
-            public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 exception = null;
+                meta = null;
                 
                 //
-                // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
-                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
+                // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
+                // String Tree is a simple class: it can have either a value (string Value { get; }) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together. 
                 //
                 
@@ -258,20 +259,18 @@ namespace vApus.Stresstest {
                     _stock_level_d_id = _rand.Next(1, _d_id_input + 1);
                 }
                 
-                
+                sentAt = HighResolutionDateTime.UtcNow;
                 if (_isDisposed) {
-                    sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();
                     return;
                 }
                 try {
-                    sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
                         _command.CommandType = CommandType.StoredProcedure;                        
                         
                         //Picking based on TPC-C doc.
-                        switch(parameterizedLogEntry.CombineValues()) {
+                        switch(parameterizedRequest.CombineValues()) {
                             case "new order":
                             NewOrder(_w_id, _w_id_input);
                             break;
@@ -292,13 +291,13 @@ namespace vApus.Stresstest {
                     catch(SqlException sqlEx) {
                         exception = sqlEx;
                         #if DEBUGMODE
-                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
                         #endif
                     }
                     catch (Exception ex) {
                         exception = ex;
                         #if DEBUGMODE
-                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
                         #endif
                     }
                 }

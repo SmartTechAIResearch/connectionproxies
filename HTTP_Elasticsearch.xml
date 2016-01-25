@@ -12,7 +12,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -38,7 +38,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -63,7 +63,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>ushortType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -134,7 +134,7 @@
     //
 #endregion // Usings
 
-namespace vApus.Stresstest
+namespace vApus.StressTest
 {
     public class ConnectionProxy : IConnectionProxy
     {
@@ -149,10 +149,10 @@ namespace vApus.Stresstest
             System.UInt16 _connectionProxySyntaxItem2 = 9200; // Port [The default value for this syntax item is used if no value is provided in the connection.]
             // -- RuleSetFields --
             
-            StringTree _parameterizedLogEntry;
+            StringTree _parameterizedRequest;
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
-
+            
             StreamReader _streamReader;
             char[] _buffer = new char[1024]; int _count = -1;
             
@@ -161,7 +161,7 @@ namespace vApus.Stresstest
             
             // Labels, for the index values of the StringTree nodes (eg. int ip = 0).
             enum SyntaxItem {
-                RelativeUrl = 0, RequestMethod, GetData, PostData, Cookies, UserAgent, ContentType, SourceIP, DestinationIP, DestinationHost, BeginTimestamp, EndTimestamp, DestinationPort, Protocol, Accept, Referer
+                RelativeUrl = 0, RequestMethod, GetData, PostDataUtf8, PostDataHex, ContentType, Accept, Protocol, DestinationHost, DestinationPort, Referer
             }
         #endregion // Fields
         
@@ -198,7 +198,7 @@ namespace vApus.Stresstest
                     
                     wr.Method = "POST";
                     wr.Timeout = 1050;
-
+                    
                     using(HttpWebResponse resp = (HttpWebResponse) wr.GetResponse()) {                      
                         IsClearedOnTest = true;
                         
@@ -210,7 +210,7 @@ namespace vApus.Stresstest
                     MessageBox.Show("Couldn't clear cache. " + e.Message);
                 }              
             }
-			
+            
             public void TestConnection(out string error) {
                 error = null;
                 
@@ -250,23 +250,23 @@ namespace vApus.Stresstest
             
             public void CloseConnection() { }
             
-            public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
-                _parameterizedLogEntry = parameterizedLogEntry;
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
+                _parameterizedRequest = parameterizedRequest;
                 exception = null;
+                meta = null;
                 
                 //
-                // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
-                // String Tree is a simple class: it can have either a value (property: string Value) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
+                // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
+                // String Tree is a simple class: it can have either a value (property: string Value) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
-
+                
+                sentAt = HighResolutionDateTime.UtcNow;
                 if (_isDisposed) {
-                    sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();
                     return;
                 }
                 try {
-                    sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
                         InitHttpWebRequest();
@@ -294,7 +294,7 @@ namespace vApus.Stresstest
                     catch (Exception ex) {
                         exception = ex;
                         #if DEBUGMODE
-                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
                         #endif
                     }
                     finally {                 
@@ -323,7 +323,7 @@ namespace vApus.Stresstest
                     _stopwatch.Reset();
                 }
             }
-         
+            
             public void Dispose() {
                 if (!_isDisposed) {
                     _isDisposed = true;
@@ -352,16 +352,16 @@ namespace vApus.Stresstest
         
         #region Free Coding
             private void InitHttpWebRequest() {
-                string relUrl = _parameterizedLogEntry[(int)SyntaxItem.RelativeUrl].Value;
-                string getData = _parameterizedLogEntry[(int)SyntaxItem.GetData].CombineValues();
+                string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
+                string getData = _parameterizedRequest[(int)SyntaxItem.GetData].CombineValues();
                 
                 _httpWebRequest = (HttpWebRequest)WebRequest.Create(new Uri(string.Format("{0}://{1}:{2}{3}{4}",
                 _connectionProxySyntaxItem1, _connectionProxySyntaxItem0, _connectionProxySyntaxItem2, relUrl, getData)));
                 
                 // Set the HTTP request method (GET/POST).
-                _httpWebRequest.Method = _parameterizedLogEntry[(int)SyntaxItem.RequestMethod].Value;
+                _httpWebRequest.Method = _parameterizedRequest[(int)SyntaxItem.RequestMethod].Value;
                 // Set the Accept header.
-                _httpWebRequest.Accept = _parameterizedLogEntry[(int)SyntaxItem.Accept].Value;
+                _httpWebRequest.Accept = _parameterizedRequest[(int)SyntaxItem.Accept].Value;
                 // A 60 second timeout should be reasonable.
                 _httpWebRequest.Timeout = REQUEST_TIMEOUT_IN_MS;
                 _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
@@ -371,7 +371,7 @@ namespace vApus.Stresstest
                 _httpWebRequest.Headers.Add("Accept-Encoding: gzip, deflate");
                 // Set the Accept-Language header.
                 _httpWebRequest.Headers.Add("Accept-Language: en-US");
-                // Don't autoredirect: redirects are already logged.
+                // Don't autoredirect: redirects are already recorded.
                 _httpWebRequest.AllowAutoRedirect = false;
                 // Set the initial content length to 0.
                 _httpWebRequest.ContentLength = 0;
@@ -386,10 +386,10 @@ namespace vApus.Stresstest
             }
             
             private void ApplyPostData() {
-                string postData = _parameterizedLogEntry[(int)SyntaxItem.PostData].Value;
+                string postData = _parameterizedRequest[(int)SyntaxItem.PostDataUtf8].Value;
                 if (postData.Length != 0) {
                     _httpWebRequest.ContentLength = postData.Length;
-                    _httpWebRequest.ContentType   = String.IsNullOrEmpty(_parameterizedLogEntry[(int)SyntaxItem.ContentType].Value) ? "application/x-www-form-urlencoded" : _parameterizedLogEntry[(int)SyntaxItem.ContentType].Value;
+                    _httpWebRequest.ContentType   = String.IsNullOrEmpty(_parameterizedRequest[(int)SyntaxItem.ContentType].Value) ? "application/x-www-form-urlencoded" : _parameterizedRequest[(int)SyntaxItem.ContentType].Value;
                     Stream postStream = _httpWebRequest.GetRequestStream();
                     StreamWriter postStreamWriter = new StreamWriter(postStream);
                     postStreamWriter.Write(postData);
@@ -402,7 +402,7 @@ namespace vApus.Stresstest
                     postStream.Close();
                 }
             }
-
+            
             // Downloads the full response and returns the page.
             // If discard is set (default), the response will be buffered in small blocks and discarded.
             // If we want to keep the full response for parsing, set discard = false.

@@ -12,7 +12,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -38,7 +38,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>stringType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -63,7 +63,7 @@
                   </RegExp>
                   <IgnoreCase>False</IgnoreCase>
                   <ValueType>ushortType</ValueType>
-                  <UsePasswordChar>False</UsePasswordChar>
+                  <DisplayAsPassword>False</DisplayAsPassword>
                   <Description>
                   </Description>
                   <Label>
@@ -107,7 +107,7 @@
 
 #region Preprocessors
     // Enable debug mode
-    //#define DEBUGMODE
+    // #define DEBUGMODE
     
     // This preprocessor disabes .NET's own cookieparser and uses our own implementation instead. This should only be used when
     // the cookiedomain is different than the used Connection, when cookies from another domain are discarded. For example a
@@ -116,13 +116,13 @@
     // custom parser that works around this security feature.
     //#define USECUSTOMCOOKIEPARSER
     
-    // When used, the Connection set in vApus will be ignored for the stresstest. The logged "destination host" is used instead.
+    // When used, the Connection set in vApus will be ignored for the stresstest. The recorded "destination host" is used instead.
     // This is sometimes necessary if for example authentication is redirected to a secondary server or if cookie-free
     // subdomains (or CDNs) are used to serve static content.
     // Note: It is recommended to use this setting when testing a HTTPS website.
     //#define USEMULTICONNECTION
     
-    // Set the logged Referer HTTP header in requests.
+    // Set the recorded Referer HTTP header in requests.
     //#define USEREFERER
     
     // Some applications use custom HTTP headers. Use this preprocessor in combination with the _customHeaders array to
@@ -145,7 +145,7 @@
     using vApus.Util;
 #endregion // Usings
 
-namespace vApus.Stresstest {
+namespace vApus.StressTest {
     public class ConnectionProxy : IConnectionProxy {
         
         #region Fields
@@ -158,7 +158,7 @@ namespace vApus.Stresstest {
             System.UInt16 _connectionProxySyntaxItem2 = 80; // Port [The default value for this syntax item is used if no value is provided in the connection.]
             // -- RuleSetFields --
             
-            StringTree _parameterizedLogEntry;
+            StringTree _parameterizedRequest;
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
             CookieCollection _cookieCollection;
@@ -171,11 +171,11 @@ namespace vApus.Stresstest {
             
             // Labels, for the index values of the StringTree nodes (eg. int ip = 0).
             enum SyntaxItem {
-                RelativeUrl = 0, RequestMethod, GetData, PostData, Cookies, UserAgent, ContentType, SourceIP, DestinationIP, DestinationHost, BeginTimestamp, EndTimestamp, DestinationPort, Protocol, Accept, Referer
+                RequestMethod = 0, Protocol, DestinationHost, DestinationPort, RelativeUrl, GetData, PostDataUtf8, PostDataHex, ContentType, Accept, Referer
             }
             
-            // EXAMPLE CUSTOM CP (Drupal): VARS
-            //string _formBuildId = string.Empty, _formToken = string.Empty, _redirectNode = string.Empty;
+            //To use the post data bytes instead of the text. For instance, to upload an image. Insert relative URLs here.
+            string[] _postDataAsBytesRelativeUrls = { };
             
             #if USECUSTOMHEADERS
                 string[] _customHeaders = { };
@@ -231,40 +231,29 @@ namespace vApus.Stresstest {
                 catch (Exception ex) {
                     error = ex.ToString();
                 }
-                finally {
-                    if (_streamReader != null) {
-                        try {
-                            _streamReader.Close();
-                            _streamReader.Dispose();
-                            _streamReader = null;
-                        }
-                        catch {
-                        }
-                    }
-                }
             }
             
             public void OpenConnection() { }
             
             public void CloseConnection() { }
             
-            public void SendAndReceive(StringTree parameterizedLogEntry, out DateTime sentAt, out TimeSpan timeToLastByte, out Exception exception) {
-                _parameterizedLogEntry = parameterizedLogEntry;
-                exception = null;
+            public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
+                _parameterizedRequest = parameterizedRequest;
+                meta                  = null;
+                exception             = null;
                 
                 //
-                // parameterizedLogEntry is the log entry parsed to a String Tree using the Log Rule Set.
-                // String Tree is a simple class: it can have either a value (property: string Value) or childs who are also String Trees (e.g. StringTree foo = parameterizedLogEntry[n] where n is an integer value).
+                // parameterizedRequest is the request parsed to a String Tree using the Scenario Rule Set.
+                // String Tree is a simple class: it can have either a value (property: string Value) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
                 
+                sentAt = HighResolutionDateTime.UtcNow;
                 if (_isDisposed) {
-                    sentAt = DateTime.Now;
                     timeToLastByte = new TimeSpan();
                     return;
                 }
                 try {
-                    sentAt = DateTime.Now;
                     _stopwatch.Start();
                     try {
                         InitHttpWebRequest();
@@ -289,9 +278,9 @@ namespace vApus.Stresstest {
                         //      1) always execute DownloadResponse()
                         //      2) execute it only once in every specific case
                         /*
-                            string relUrl = _parameterizedLogEntry[(int)SyntaxItem.RelativeUrl].Value;
-                            string method = _parameterizedLogEntry[(int)SyntaxItem.RequestMethod].Value;
-                            string getData = _parameterizedLogEntry[(int)SyntaxItem.GetData].CombineValues();
+                            string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
+                            string method = _parameterizedRequest[(int)SyntaxItem.RequestMethod].Value;
+                            string getData = _parameterizedRequest[(int)SyntaxItem.GetData].CombineValues();
                             string location = _httpWebResponse.GetResponseHeader("Location");
                             
                             if (relUrl == "/node/add/article" &amp;&amp; method == "GET") {
@@ -316,7 +305,7 @@ namespace vApus.Stresstest {
                     catch (Exception ex) {
                         exception = ex;
                         #if DEBUGMODE
-                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedLogEntry.CombineValues() + " " + exception);
+                            EventPanel.AddEvent("SendAndReceive Exception: " + parameterizedRequest.CombineValues() + " " + exception);
                         #endif
                     }
                     finally {
@@ -351,12 +340,11 @@ namespace vApus.Stresstest {
                     _isDisposed = true;
                     try {
                         // Timeout immediately.
-                        if(_httpWebRequest != null) {
+                        if(_httpWebRequest != null){
                             _httpWebRequest.Abort();
                         }
                     } 
-                    catch { 
-                    }
+                    catch { }
                     _httpWebRequest = null;
                     _httpWebResponse = null;
                     _cookieCollection= null;
@@ -367,7 +355,7 @@ namespace vApus.Stresstest {
                             _streamReader.Dispose();
                             _streamReader = null;
                         } 
-                        catch { 
+                        catch {
                         }
                     }
                 }
@@ -376,8 +364,8 @@ namespace vApus.Stresstest {
         
         #region Free Coding
             private void InitHttpWebRequest() {
-                string relUrl = _parameterizedLogEntry[(int)SyntaxItem.RelativeUrl].Value;
-                string getData = _parameterizedLogEntry[(int)SyntaxItem.GetData].CombineValues();
+                string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
+                string getData = _parameterizedRequest[(int)SyntaxItem.GetData].CombineValues();
                 
                 // EXAMPLE CUSTOM CP (Drupal): USE EXTRACTED DATA IN relUrl
                 // Here you can also change getData if needed
@@ -389,14 +377,14 @@ namespace vApus.Stresstest {
                 
                 _httpWebRequest = (HttpWebRequest)WebRequest.Create(CreateUri(relUrl, getData));
                 // Set the HTTP request method (GET/POST).
-                _httpWebRequest.Method    = _parameterizedLogEntry[(int)SyntaxItem.RequestMethod].Value;
+                _httpWebRequest.Method    = _parameterizedRequest[(int)SyntaxItem.RequestMethod].Value;
                 // Set the User Agent.
-                _httpWebRequest.UserAgent = "vApus";
+                _httpWebRequest.UserAgent = "vApus";                
                 // Set the Accept header.
-                _httpWebRequest.Accept = _parameterizedLogEntry[(int)SyntaxItem.Accept].Value;
+                _httpWebRequest.Accept = _parameterizedRequest[(int)SyntaxItem.Accept].Value;
                 // Set the Referer header.
                 #if USEREFERER
-                    _httpWebRequest.Referer = _parameterizedLogEntry[(int)SyntaxItem.Referer].Value;
+                    _httpWebRequest.Referer = _parameterizedRequest[(int)SyntaxItem.Referer].Value;
                 #endif
                 _httpWebRequest.Timeout = REQUEST_TIMEOUT_IN_MS;
                 _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
@@ -406,7 +394,7 @@ namespace vApus.Stresstest {
                 _httpWebRequest.Headers.Add("Accept-Encoding: gzip, deflate");
                 // Set the Accept-Language header.
                 _httpWebRequest.Headers.Add("Accept-Language: en-US");
-                // Don't autoredirect: redirects are already logged.
+                // Don't autoredirect: redirects are already recorded.
                 _httpWebRequest.AllowAutoRedirect = false;
                 // Set the initial content length to 0.
                 _httpWebRequest.ContentLength = 0;
@@ -435,23 +423,38 @@ namespace vApus.Stresstest {
             }
             
             private void ApplyPostData() {
-                string relUrl = _parameterizedLogEntry[(int)SyntaxItem.RelativeUrl].Value;
-                string postData = _parameterizedLogEntry[(int)SyntaxItem.PostData].Value;
-                if (postData.Length != 0) {
-                    
-                    // EXAMPLE CUSTOM CP (Drupal): CHANGE POSTDATA
-                    /*
-                        if (relUrl == "/node/add/article" &amp;&amp; _formBuildId != string.Empty &amp;&amp; _formToken != string.Empty) {
-                            postData = postData.Replace("@replaceFormBuildId", _formBuildId).Replace("@replaceFormToken", _formToken);
+                string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
+                
+                if (_postDataAsBytesRelativeUrls.Contains(relUrl)) { // To use the post data bytes instead of the text. For instance, to upload an image.
+                    string postData = _parameterizedRequest[(int)SyntaxItem.PostDataHex].Value;
+                    if(postData.Length != 0) {
+                        byte[] postDataBytes = HexToBytes(postData);
+                        _httpWebRequest.ContentLength = postData.Length;
+                        _httpWebRequest.ContentType   = _parameterizedRequest[(int)SyntaxItem.ContentType].Value;
+                        using (Stream postStream = _httpWebRequest.GetRequestStream()) {
+                            postStream.Write(postDataBytes, 0, postDataBytes.Length);
+                            postStream.Flush();
                         }
-                    */
-                    
-                    _httpWebRequest.ContentLength = postData.Length;
-                    _httpWebRequest.ContentType   = _parameterizedLogEntry[(int)SyntaxItem.ContentType].Value;
-                    using (Stream postStream = _httpWebRequest.GetRequestStream()) {
-                        using (StreamWriter postStreamWriter = new StreamWriter(postStream)) {
-                            postStreamWriter.Write(postData);
-                            postStreamWriter.Flush();
+                    }
+                }
+                else {
+                    string postData = _parameterizedRequest[(int)SyntaxItem.PostDataUtf8].Value;
+                    if (postData.Length != 0) {
+                        
+                        // EXAMPLE CUSTOM CP (Drupal): CHANGE POSTDATA
+                        /*
+                            if (relUrl == "/node/add/article" &amp;&amp; _formBuildId != string.Empty &amp;&amp; _formToken != string.Empty) {
+                                postData = postData.Replace("@replaceFormBuildId", _formBuildId).Replace("@replaceFormToken", _formToken);
+                            }
+                        */
+                        
+                        _httpWebRequest.ContentLength = postData.Length;
+                        _httpWebRequest.ContentType   = _parameterizedRequest[(int)SyntaxItem.ContentType].Value;
+                        using (Stream postStream = _httpWebRequest.GetRequestStream()) {
+                            using (StreamWriter postStreamWriter = new StreamWriter(postStream)) {
+                                postStreamWriter.Write(postData);
+                                postStreamWriter.Flush();
+                            }
                         }
                     }
                 }                               
@@ -547,7 +550,7 @@ namespace vApus.Stresstest {
                 string uri = string.Empty;
                 
                 #if USEMULTICONNECTION
-                    uri = string.Format("{0}://{1}:{2}", _parameterizedLogEntry[(int)SyntaxItem.Protocol].Value, _parameterizedLogEntry[(int)SyntaxItem.DestinationHost].Value, _parameterizedLogEntry[(int)SyntaxItem.DestinationPort].Value);
+                    uri = string.Format("{0}://{1}:{2}", _parameterizedRequest[(int)SyntaxItem.Protocol].Value, _parameterizedRequest[(int)SyntaxItem.DestinationHost].Value, _parameterizedRequest[(int)SyntaxItem.DestinationPort].Value);
                     #else
                     uri = string.Format("{0}://{1}:{2}", _connectionProxySyntaxItem1, _connectionProxySyntaxItem0, _connectionProxySyntaxItem2);
                 #endif
@@ -570,6 +573,15 @@ namespace vApus.Stresstest {
                     endIndex = source.IndexOf(alternativeAfter, StringComparison.InvariantCultureIgnoreCase);
                 }
                 return source.Substring(0, endIndex);
+            }
+            
+            // For Post data (bytes as hex)
+            private byte[] HexToBytes(string s) {
+                byte[] arr = new byte[s.Length / 2];
+                for (int i = 0; i &lt; s.Length; i += 2)
+                arr[i / 2] = Convert.ToByte(s.Substring(i, 2), 16);
+                
+                return arr;
             }
             
             // Downloads the full response and returns the page.
