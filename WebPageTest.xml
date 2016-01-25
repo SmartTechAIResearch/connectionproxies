@@ -214,6 +214,7 @@
 
 #region Usings
     using System;
+    using System.Collections.Generic;
     using System.Data;
     using System.Diagnostics;
     using System.IO;
@@ -222,12 +223,14 @@
     using System.Net;
     using System.Net.NetworkInformation;
     using System.Net.Security;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Web;
     using System.Windows.Forms;
     using System.Security.Cryptography.X509Certificates;
     using vApus.Util;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 #endregion // Usings
 
@@ -277,9 +280,6 @@ namespace vApus.StressTest {
             enum SyntaxItem {
                 Url = 0, DomElement, Script
             }
-            
-            //To use the post data bytes instead of the text. For instance, to upload an image. Insert relative URLs here.
-            string[] _postDataAsBytesRelativeUrls = { };
         #endregion // Fields
         
         #region Properties
@@ -325,7 +325,7 @@ namespace vApus.StressTest {
             
             public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
-                sentAt = HighResolutionDateTime.UtcNow;
+                sentAt                = HighResolutionDateTime.UtcNow;
                 meta                  = null;
                 exception             = null;
                 
@@ -461,6 +461,63 @@ namespace vApus.StressTest {
                         }
                     }
                 }
+            }
+            private byte[] BrowseRaw(Uri uri){
+                _httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
+                // Set the HTTP request method (GET/POST).
+                _httpWebRequest.Method = "GET";
+                // Set the User Agent.
+                _httpWebRequest.UserAgent        = "vApus";            
+                _httpWebRequest.Timeout          = REQUEST_TIMEOUT_IN_MS;
+                _httpWebRequest.ReadWriteTimeout = _httpWebRequest.Timeout;
+                // Allow keepalive.
+                _httpWebRequest.KeepAlive = true;
+                // Allow compression.
+                _httpWebRequest.Headers.Add("Accept-Encoding: gzip, deflate");
+                // Set the Accept-Language header.
+                _httpWebRequest.Headers.Add("Accept-Language: en-US");
+                // Don't autoredirect: redirects are already recorded.
+                _httpWebRequest.AllowAutoRedirect = false;
+                // Set the initial content length to 0.
+                _httpWebRequest.ContentLength = 0;
+                // Send post data with the same request.
+                _httpWebRequest.ServicePoint.Expect100Continue = false;
+                // Set the connection limit to our concurrency.
+                _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
+                
+                
+                _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
+                
+                byte[] raw = null;
+                
+                using(var ms = new MemoryStream()){
+                    _httpWebResponse.GetResponseStream().CopyTo(ms);
+                    
+                    if (_httpWebResponse.ContentEncoding.ToLower().Contains("gzip")) {
+                        using (var gzipStream = new GZipStream(ms, CompressionMode.Decompress)){
+                            using(var ms2 =new MemoryStream()){
+                                gzipStream.CopyTo(ms2);
+                                raw = ms2.ToArray();
+                            }
+                        }
+                    }
+                    else if(_httpWebResponse.ContentEncoding.ToLower().Contains("deflate")){
+                        using (var dfStream = new DeflateStream(ms, CompressionMode.Decompress)){
+                            using(var ms2 =new MemoryStream()){
+                                dfStream.CopyTo(ms2);
+                                raw = ms2.ToArray();
+                            }
+                        }
+                    }
+                    else {
+                        raw = ms.ToArray();
+                    }
+                }
+                
+                
+                
+                
+                return raw;
             }
             
             private string GetConnection(){
@@ -603,12 +660,176 @@ namespace vApus.StressTest {
                 timeToLastByte = new TimeSpan((long)(ttlbs.Average() * TimeSpan.TicksPerMillisecond));
                 
                 dynamic meta = new JObject();
-                meta.type        = "WebPageTest"; //Define the type for correct vizualization of the meta.
-                meta.rawPage     = Browse(CreatePageCsvUri(testId));
-                meta.rawRequests = Browse(CreateRequestsCsvUri(testId));
-                meta.har         = Browse(CreateHarUri(testId));
+                meta.type              = "WebPageTest"; //Define the type for correct vizualization of the meta.
+                
+                JObject page, cachedPage;
+                GetPages(testId, out page, out cachedPage);
+                meta.page       = page;
+                meta.cachedPage = cachedPage;
+                
+                JArray requests, cachedRequests;
+                GetRequests(testId, out requests, out cachedRequests);
+                meta.requests       = requests;
+                meta.cachedRequests = cachedRequests;
+                
+                meta.har               = JObject.Parse(Browse(CreateHarUri(testId)));
+                
+                JArray utilization, cachedUtilization;
+                GetUtilizations(testId, out utilization, out cachedUtilization);
+                meta.utilization       = utilization;
+                meta.cachedUtilization = cachedUtilization;
+                
+                JArray videoFrames, cachedVideoFrames;
+                GetVideoFrames(info, out videoFrames, out cachedVideoFrames);
+                meta.videoFrames       = videoFrames;
+                meta.cachedVideoFrames = cachedVideoFrames;
+                
                 return meta.ToString();
             }
+            
+            private void GetPages(string testId, out JObject page, out JObject cachedPage){
+                SV sv = new SV(Browse(CreatePageCsvUri(testId)));
+                var rawPageType = typeof(RawPage);
+                
+                RawPage rp = new RawPage();
+                RawPage crp = new RawPage();
+                TypedReference rawPageRef = __makeref(rp);
+                TypedReference cachedRawPageRef = __makeref(crp);                
+                
+                foreach (string header in sv.Headers) {
+                    string propertyName = RawPage.GetPropertyName(header);
+                    PropertyInfo pi = rawPageType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                    if (pi != null) {
+                        string[] values = sv.GetValues(header);
+                        pi.SetValue(rp, Parse(values[0], pi.PropertyType, false));
+                        if (values.Length != 1) pi.SetValue(crp, Parse(values[1], pi.PropertyType, false));
+                    }
+                }
+                
+                page       = JObject.Parse(JsonConvert.SerializeObject(rp));
+                cachedPage = JObject.Parse(JsonConvert.SerializeObject(crp));
+            }
+            
+            private void GetRequests(string testId, out JArray requests, out JArray cachedRequests){
+                var sv = new SV(Browse(CreateRequestsCsvUri(testId)));
+                var rawRequestType = typeof(RawRequest);
+                
+                var l = new List&lt;RawRequest&gt;();
+                
+                foreach (string header in sv.Headers) {
+                    string propertyName = RawRequest.GetPropertyName(header);
+                    PropertyInfo pi= rawRequestType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                    if (pi != null) {
+                        string[] values = sv.GetValues(header);
+                        for (int i = 0; i != values.Length; i++) {
+                            if (i == l.Count) l.Add(new RawRequest());
+                            var rawRequest = l[i];
+                            pi.SetValue(rawRequest, Parse(values[i], pi.PropertyType, false));
+                        }
+                    }
+                }
+                
+                requests       = new JArray();
+                cachedRequests = new JArray();
+                
+                var correctRequests = requests; //Put requests in the right list based on the sequence number.
+                int sequenceNumber = 0;
+                foreach (var rawRequest in l) {
+                    if (rawRequest.sequenceNumber &lt; sequenceNumber) correctRequests = cachedRequests;
+                    sequenceNumber = rawRequest.sequenceNumber;
+                    correctRequests.Add(CreateRequest(rawRequest));
+                }
+            }
+            private JObject CreateRequest(RawRequest rr){
+                dynamic request = new JObject();
+                request.method      = rr.action;
+                request.result      = rr.responseCode;
+                request.host        = rr.host;
+                request.url         = rr.url;
+                long dnsInMs        = rr.dnsEndInMs - rr.dnsStartInMs;
+                long connectInMs    = rr.connectEndInMs - rr.connectStartInMs;
+                long sslInMs        = rr.sslNegotiationEndInMs - rr.sslNegotiationStartInMs;
+                request.requestOffsetInMs       = rr.startTimeInMs - dnsInMs - connectInMs - sslInMs;
+                request.dnsInMs                 = dnsInMs;
+                request.connectInMs             = connectInMs;
+                request.sslInMs                 = sslInMs;
+                request.timeToFirstByteInMs     = rr.timeToFirstByteInMs;
+                request.timeToLastByteInMs      = rr.timeToLoadInMs - rr.timeToFirstByteInMs;
+                request.socketId                = rr.socketId;
+                request.bytesOut                = rr.bytesOut;
+                request.bytesIn                 = rr.bytesIn;
+                request.expires                 = rr.expires;
+                request.cacheControl            = rr.cacheControl;
+                request.contentType             = rr.contentType;
+                request.contentENcoding         = rr.contentEncoding;
+                request.cacheScore              = rr.cacheScore;
+                request.staticCDNScore          = rr.staticCDNScore;
+                request.gzipScore               = rr.gzipScore;
+                request.cookieScore             = rr.cookieScore;
+                request.keepAliveScore          = rr.keepAliveScore;
+                request.doctypeScore            = rr.doctypeScore;
+                request.minifyScore             = rr.minifyScore;
+                request.combineScore            = rr.combineScore;
+                request.compressionScore        = rr.compressionScore;
+                request.etagScore               = rr.etagScore;
+                request.cdnProvider             = rr.cdnProvider;
+                request.initiator               = rr.initiator;
+                request.initiatorLine           = rr.initiatorLine;
+                request.initiatorColumn         = rr.initiatorColumn;
+                request.serverCount             = rr.serverCount;
+                request.serverRoundTripTimeInMs = rr.serverRoundTripTimeInMs;
+                return request;
+            }
+            
+            private void GetUtilizations(string testId, out JArray utilization, out JArray cachedUtilization){
+                utilization       = GetUtilization(Browse(CreateUtilizationUri(testId)));
+                cachedUtilization = GetUtilization(Browse(CreateCachedUtilizationUri(testId)));
+            }
+            
+            private JArray GetUtilization(string s){
+                var sv = new SV(s, ",");
+                var utilizationType = typeof(Utilization);
+                
+                var l = new List&lt;Utilization&gt;();
+                
+                foreach (string header in sv.Headers) {
+                    string propertyName = Utilization.GetPropertyName(header);
+                    PropertyInfo pi = utilizationType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                    if (pi != null) {
+                        string[] values = sv.GetValues(header);
+                        for (int i = 0; i != values.Length; i++) {
+                            if (i == l.Count) l.Add(new Utilization());
+                            var u = l[i];
+                            pi.SetValue(u, Parse(values[i], pi.PropertyType, false));
+                        }
+                    } 
+                }
+                
+                var utilization = new JArray();
+                foreach(var u in l) utilization.Add(JObject.Parse(JsonConvert.SerializeObject(u)));
+                return utilization;
+            }
+            
+            private void GetVideoFrames(JObject info, out JArray videoFrames, out JArray cachedVideoFrames){
+                // JArray videoFrames = (JArray)info["data"]["runs"]["1"]["firstView"]["videoFrames"];
+                //JArray videoFrames = (JArray)info["data"]["runs"]["1"]["repeatView"]["videoFrames"];
+                videoFrames       = GetVideoFrames(info, "firstView");
+                cachedVideoFrames = GetVideoFrames(info, "repeatView");
+            }
+            
+            private JArray GetVideoFrames(JObject info, string view){
+                JArray videoFrames = (JArray)info["data"]["runs"]["1"][view]["videoFrames"];
+                foreach(JObject frame in videoFrames){
+                    frame["image"] = BrowseRaw(new Uri((string)frame["image"]));
+                }
+                
+                #if DEBUGMODE
+                    EventPanel.AddEvent("Fetched video frames");
+                #endif
+                
+                return videoFrames;
+            }
+            
             private Uri CreateJsonResultUri(string testId){
                 StringBuilder sb = new StringBuilder(GetConnection());
                 sb.Append("/jsonResult.php?test=");
@@ -663,6 +884,325 @@ namespace vApus.StressTest {
                 
                 return new Uri(uri);
             }
+            private Uri CreateUtilizationUri(string testId){
+                StringBuilder sb = new StringBuilder(GetConnection());
+                sb.Append("/results/");
+                sb.Append(testId.Substring(0, 2));
+                sb.Append("/");
+                sb.Append(testId.Substring(2, 2));
+                sb.Append("/");                
+                sb.Append(testId.Substring(4, 2));
+                sb.Append("/");
+                sb.Append(testId.Substring(7, 2));
+                sb.Append("/");
+                sb.Append(testId.Substring(10));
+                sb.Append("/1_progress.csv");
+                
+                string uri = sb.ToString();
+                
+                #if DEBUGMODE
+                    EventPanel.AddEvent("First view utilization request: " + uri);
+                #endif
+                
+                return new Uri(uri);
+            }
+            private Uri CreateCachedUtilizationUri(string testId){
+                StringBuilder sb = new StringBuilder(GetConnection());
+                sb.Append("/results/");
+                sb.Append(testId.Substring(0, 2));
+                sb.Append("/");
+                sb.Append(testId.Substring(2, 2));
+                sb.Append("/");                
+                sb.Append(testId.Substring(4, 2));
+                sb.Append("/");
+                sb.Append(testId.Substring(7, 2));
+                sb.Append("/");
+                sb.Append(testId.Substring(10));
+                sb.Append("/1_Cached_progress.csv");
+                
+                string uri = sb.ToString();
+                
+                #if DEBUGMODE
+                    EventPanel.AddEvent("Repeat view utilization request: " + uri);
+                #endif
+                
+                return new Uri(uri);
+            }
+            
+            /// &lt;summary&gt;
+            /// 
+            /// &lt;/summary&gt;
+            /// &lt;param name="value"&gt;&lt;/param&gt;
+            /// &lt;param name="targetType"&gt;&lt;/param&gt;
+            /// &lt;param name="strict"&gt;
+            /// &lt;para&gt;If false and the value is null or white space a default value is returned.&lt;/para&gt;
+            /// &lt;para&gt;If true, parsing of the value happens and an error is thrown when this is not possible.&lt;/para&gt;
+            /// &lt;/param&gt;
+            /// &lt;returns&gt;&lt;/returns&gt;
+            protected object Parse(string value, Type targetType, bool strict) {
+                try {
+                    if (targetType == typeof(DateTime)) {
+                        if (!strict &amp;&amp; string.IsNullOrWhiteSpace(value)) return DateTime.MinValue;
+                        return DateTime.Parse(value);
+                    }
+                    if (targetType == typeof(bool)) {
+                        if (!strict &amp;&amp; string.IsNullOrWhiteSpace(value)) return false;
+                        if (value == "0") return false;
+                        if (value == "1") return true;
+                        return bool.Parse(value);
+                    }
+                    if (targetType == typeof(int)) {
+                        if (!strict &amp;&amp; string.IsNullOrWhiteSpace(value)) return -1;
+                        return int.Parse(value);
+                    }
+                    if (targetType == typeof(long)) {
+                        if (!strict &amp;&amp; string.IsNullOrWhiteSpace(value)) return -1L;
+                        return long.Parse(value);
+                    }
+                    if (targetType == typeof(double)) {
+                        if (!strict &amp;&amp; string.IsNullOrWhiteSpace(value)) return -1.0;
+                        try{
+                            return double.Parse(value);
+                        } 
+                        catch{
+                            if(value.Contains(".")) return double.Parse(value.Replace(".", ","));
+                            return double.Parse(value.Replace(",", "."));
+                        }
+                    }
+                    return value;
+                }
+                #if DEBUG
+                    catch (Exception ex){
+                        EventPanel.AddEvent("Failed parsing " + value + "\n" + ex.ToString());
+                        throw ex;
+                    }
+                    #else
+                    catch{
+                        throw;
+                    }
+                #endif
+            }
+            
+            
+            internal class RawPage {
+                public string url { get; set; }
+                public long loadTimeInMs { get; set; }
+                public long timeToFirstByteInMs { get; set; }
+                public long bytesOut { get; set; }
+                public long bytesIn{ get; set; }
+                public int dnsLookups { get; set; }
+                public int connections { get; set; }
+                public int requests { get; set; }
+                public int okResponses { get; set; }
+                public int redirects { get; set; }
+                public int notModified { get; set; }
+                public int notFound { get; set; }
+                public int otherResponses { get; set; }
+                public int errorCode { get; set; }
+                public long timeToStartRenderInMs { get; set; }
+                public long activityTimeInMs { get; set; }
+                public long docCompleteTimeInMs { get; set; }
+                public long timeToDOMElementInMs { get; set; }
+                public bool includesObjectData { get; set; }
+                public int cacheScore { get; set; }
+                public int staticCDNScore { get; set; }
+                public int oneCDNScore { get; set; }
+                public int gzipScore { get; set; }
+                public int cookieScore { get; set; }
+                public int keepAliveScore { get; set; }
+                public int doctypeScore { get; set; }
+                public int minifyScore { get; set; }
+                public int combineScore { get; set; }
+                public long bytesOutDoc { get; set; }
+                public long bytesInDoc { get; set; }
+                public int dnsLookupsDoc { get; set; }
+                public int connectionsDoc { get; set; }
+                public int requestsDoc { get; set; }
+                public int okResponsesDoc { get; set; }
+                public int redirectsDoc { get; set; }
+                public int notModifiedDoc { get; set; }
+                public int notFoundDoc { get; set; }
+                public int otherResponsesDoc { get; set; }
+                public int errorCodeDoc { get; set; }
+                public int compressionScore { get; set; }
+                public int etagScore { get; set; }
+                public long timeToBasePageCompleteInMs { get; set; }
+                public int basePageResult { get; set; }
+                public long gzipTotalBytes { get; set; }
+                public long gzipSavings { get; set; }
+                public long minifyTotalBytes { get; set; }
+                public long minifySavings { get; set; }
+                public long imageTotalBytes { get; set; } 
+                public long imageSavings { get; set; }
+                public int basePageRedirects { get; set; }
+                public bool optimizationChecked { get; set; }
+                //Sadly following measurement does not exist anymore.
+                //public long AboveTheFoldRenderTimeInMs;
+                public int domElements { get; set; }
+                
+                //PageSpeed
+                public string pageTitle { get; set; }
+                public long timeToTitleInMs { get; set; }
+                public long loadEventStartInMs { get; set; } 
+                public long loadEventEndInMs { get; set; }
+                public long domContentReadyStartInMs { get; set; } 
+                public long domContentReadyEndInMs { get; set; } 
+                public long visuallyCompleteInMs { get; set; }
+                public string browserName { get; set; }
+                public string browserVersion { get; set; }
+                public int basePageServerCount { get; set; }
+                public long basePageServerRoundTripTimeInMs { get; set; }
+                public string basePageCDN { get; set; }
+                public bool adultSite { get; set; }
+                public int speedIndex { get; set; }
+                
+                
+                public static string GetPropertyName(string svHeader) {
+                    svHeader = svHeader.Replace(" ", string.Empty).ToLowerInvariant().Replace("ms", "inms").Replace("(", string.Empty).Replace(")", string.Empty).Replace("-", string.Empty);
+                    switch (svHeader) {
+                        case "timetotitle":
+                        return "timetotitleinms";
+                        case "loadeventstart":
+                        return "loadeventstartinms";
+                        case "loadeventend":
+                        return "loadeventendinms";
+                        case "domcontentreadystart":
+                        return "domcontentreadystartinms";
+                        case "domcontentreadyend":
+                        return "domcontentreadyendinms";
+                        case "basepageserverrtt":
+                        return "basepageserverroundtriptimeinms";
+                    }
+                    return svHeader;
+                }
+            }
+            
+            internal class RawRequest {
+                public string action { get; set; } 
+                public string host{ get; set; } 
+                public string url{ get; set; }
+                public int responseCode { get; set; }
+                public long timeToLoadInMs { get; set; } 
+                public long timeToFirstByteInMs { get; set; } 
+                public long startTimeInMs { get; set; } 
+                public long bytesOut { get; set; }
+                public long bytesIn { get; set; }
+                public long objectSize { get; set; } 
+                public long cookieSizeOut { get; set; }
+                public int cookieCountOut { get; set; }
+                public string expires { get; set; } 
+                public string cacheControl { get; set; } 
+                public string contentType { get; set; }
+                public string contentEncoding { get; set; }
+                public int transactionType { get; set; } 
+                public int socketId { get; set; } 
+                public int documentId { get; set; }
+                public int sequenceNumber { get; set; }
+                public int cacheScore { get; set; } 
+                public int staticCDNScore { get; set; } 
+                public int gzipScore { get; set; } 
+                public int cookieScore  { get; set; }
+                public int keepAliveScore { get; set; } 
+                public int doctypeScore  { get; set; }
+                public int minifyScore { get; set; }
+                public int combineScore { get; set; } 
+                public int compressionScore { get; set; } 
+                public int etagScore { get; set; }
+                public bool flagged { get; set; } 
+                public bool secure { get; set; }
+                public long gzipTotalBytes { get; set; }
+                public long gzipSavings { get; set; }
+                public long minifyTotalBytes { get; set; }
+                public long minifySavings { get; set; }
+                public long imageTotalBytes { get; set; } 
+                public long imageSavings  { get; set; }
+                public long cacheTimeInSec { get; set; }
+                public bool optimizationChecked { get; set; }
+                public string cdnProvider { get; set; }
+                public long dnsStartInMs { get; set; }
+                public long dnsEndInMs { get; set; }
+                public long connectStartInMs { get; set; }
+                public long connectEndInMs { get; set; } 
+                public long sslNegotiationStartInMs { get; set; } 
+                public long sslNegotiationEndInMs { get; set; }
+                public string initiator {get; set;}
+                public int initiatorLine { get; set; }
+                public int initiatorColumn { get; set; }
+                public int serverCount { get; set; }
+                public long serverRoundTripTimeInMs{ get; set; }
+                
+                public static string GetPropertyName(string svHeader) {
+                    svHeader = svHeader.Replace(" ", string.Empty).ToLowerInvariant().Replace("ms", "inms").Replace("(", string.Empty).Replace(")", string.Empty).Replace("-", string.Empty);
+                    switch (svHeader) {
+                        case "dnsstart":
+                        return "dnsstartinms";
+                        case "dnsend":
+                        return "dnsendinms";
+                        case "connectstart":
+                        return "connectstartinms";
+                        case "connectend":
+                        return "connectendinms";
+                        case "sslnegotiationstart":
+                        return "sslnegotiationstartinms";
+                        case "sslnegotiationend":
+                        return "sslnegotiationendinms";
+                        case "serverrtt":
+                        return "ServerRoundTripTimeInMs";
+                    }
+                    return svHeader;
+                }
+            }
+            
+            internal class Utilization{
+                public long offsetTimeInMs { get; set; } 
+                public long bandwidthInInkbps { get; set; }
+                public double cpuUtilizationInPercent { get; set; }
+                public long memoryUseInKB { get; set; }
+                
+                public static string GetPropertyName(string svHeader) {
+                    return svHeader.Replace(" ", string.Empty).ToLowerInvariant().Replace("ms", "inms").Replace("kb", "inkb").Replace("%", "inpercent").Replace("(", string.Empty).Replace(")", string.Empty);
+                }
+            }
+            
+            internal class SV {
+                private List&lt;KeyValuePair&lt;string, List&lt;string&gt;&gt;&gt; _store = new List&lt;KeyValuePair&lt;string, List&lt;string&gt;&gt;&gt;();
+                
+                public string[] Headers {
+                    get {
+                        var headers = new string[_store.Count];
+                        for (int i = 0; i != headers.Length; i++)
+                        headers[i] = _store[i].Key;
+                        
+                        return headers;
+                    }
+                }
+                
+                public SV(string sv, string seperator = "\",") {
+                    foreach (string row in sv.Split(new char[] { 
+                    '\n', '\r' },
+                    StringSplitOptions.RemoveEmptyEntries)) {
+                        string[] cells = row.Split(new string[] { seperator }, StringSplitOptions.None);
+                        if (_store.Count == 0) {
+                            foreach (string header in cells) {
+                                _store.Add(new KeyValuePair&lt;string, List&lt;string&gt;&gt;(header.Trim('\"'), new List&lt;string&gt;()));
+                            }
+                        }
+                        else{
+                            for (int i = 0; i != cells.Length; i++){
+                                if (i != _store.Count) _store[i].Value.Add(cells[i].Trim('\"'));
+                            }
+                        }
+                    }
+                }
+                
+                public string[] GetValues(string column) {
+                    foreach (var kvp in _store) {
+                        if (kvp.Key == column) return kvp.Value.ToArray();
+                    }
+                    return null;
+                }
+            }
+            
         #endregion // Free Coding
     } // ConnectionProxy
     
