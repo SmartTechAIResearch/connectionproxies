@@ -1,1 +1,0 @@
-You need to have Firefox 41+ installed at the default location (Program Files(x86).)
