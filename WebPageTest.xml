@@ -749,7 +749,7 @@ namespace vApus.StressTest {
                 long dnsInMs        = rr.dnsEndInMs - rr.dnsStartInMs;
                 long connectInMs    = rr.connectEndInMs - rr.connectStartInMs;
                 long sslInMs        = rr.sslNegotiationEndInMs - rr.sslNegotiationStartInMs;
-                request.requestOffsetInMs       = rr.startTimeInMs - dnsInMs - connectInMs - sslInMs;
+                request.requestOffsetInMs       = rr.sequenceNumber == 1 ? 0L : rr.startTimeInMs - dnsInMs - connectInMs - sslInMs;
                 request.dnsInMs                 = dnsInMs;
                 request.connectInMs             = connectInMs;
                 request.sslInMs                 = sslInMs;
@@ -985,6 +985,7 @@ namespace vApus.StressTest {
             
             
             internal class RawPage {
+                public long sequenceNumber { get; set; }
                 public string url { get; set; }
                 public long loadTimeInMs { get; set; }
                 public long timeToFirstByteInMs { get; set; }
