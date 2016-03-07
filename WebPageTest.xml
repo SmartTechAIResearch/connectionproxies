@@ -1158,7 +1158,6 @@ namespace vApus.StressTest {
                 public long offsetTimeInMs { get; set; } 
                 public long bandwidthInInkbps { get; set; }
                 public double cpuUtilizationInPercent { get; set; }
-                public long memoryUseInKB { get; set; }
                 
                 public static string GetPropertyName(string svHeader) {
                     return svHeader.Replace(" ", string.Empty).ToLowerInvariant().Replace("ms", "inms").Replace("kb", "inkb").Replace("%", "inpercent").Replace("(", string.Empty).Replace(")", string.Empty);
