@@ -103,7 +103,7 @@
 */
 
 // The following line is used to add references when compiling, you can edit this here or in the references tab page. Please use the 'Browse...' button for dlls that are not in the GAC.
-// dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.Stresstest.dll;System.Web.dll;System.Windows.Forms.dll;System.Core.dll;
+// dllreferences:System.dll;System.Data.dll;vApus.Util.dll;vApus.SolutionTree.dll;vApus.Stresstest.dll;System.Web.dll;System.Windows.Forms.dll;System.Core.dll;
 
 #region Preprocessors
     // Enable debug mode
