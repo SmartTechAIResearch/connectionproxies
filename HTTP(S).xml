@@ -139,6 +139,7 @@
     using System.Linq;
     using System.Net;
     using System.Net.Security;
+    using System.Threading;
     using System.Web;
     using System.Windows.Forms;
     using System.Security.Cryptography.X509Certificates;
@@ -599,6 +600,21 @@ namespace vApus.StressTest {
                 }
                 
                 return string.Empty;
+            }
+            
+            // Returns false if the current thread is a 'parallel request thread'.
+            private bool IsSimulatedUserThread(){
+                return Thread.CurrentThread.GetParent() == null;
+            }
+            
+            // This function returns the owner name of the simulated user thread.
+            // If the current thread is a 'parallel request thread' it's 'parent thread' owner name is returned.
+            private string GetParallelRequestThreadOwner(){
+                string owner = Thread.CurrentThread.GetParent() as string;     
+                if (owner == null) {     
+                    owner = Thread.CurrentThread.Name;     
+                }
+                return owner;
             }
         #endregion // Free Coding
     } // ConnectionProxy
