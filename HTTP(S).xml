@@ -107,7 +107,7 @@
 
 #region Preprocessors
     // Enable debug mode
-    // #define DEBUGMODE
+    //#define DEBUGMODE
     
     // This preprocessor disabes .NET's own cookieparser and uses our own implementation instead. This should only be used when
     // the cookiedomain is different than the used Connection, when cookies from another domain are discarded. For example a
@@ -123,7 +123,7 @@
     //#define USEMULTICONNECTION
     
     // Set the recorded Referer HTTP header in requests.
-    //#define USEREFERER
+    #define USEREFERER
     
     // Some applications use custom HTTP headers. Use this preprocessor in combination with the _customHeaders array to
     // to add this fucntionality to the test.
@@ -468,6 +468,7 @@ namespace vApus.StressTest {
             }
             
             private void HandleCookiesBeforeRequest() {
+                var cookieCollection = _cookieCollection.Get&lt;CookieCollection&gt;(GetParallelRequestThreadOwner());
                 #if USECUSTOMCOOKIEPARSER
                     // Domain for the cookies should be determined here.
                     string domain = _httpWebRequest.RequestUri.GetLeftPart(UriPartial.Authority);
@@ -492,13 +493,13 @@ namespace vApus.StressTest {
                         }
                     */
                     
-                    foreach (Cookie cookie in _cookieCollection) {
+                    foreach (Cookie cookie in cookieCollection) {
                         cookie.Domain = domain;
                     }
                 #endif
                 
                 _httpWebRequest.CookieContainer = new CookieContainer();
-                _httpWebRequest.CookieContainer.Add(_cookieCollection.Get&lt;CookieCollection&gt;(GetParallelRequestThreadOwner()));
+                _httpWebRequest.CookieContainer.Add(cookieCollection);
             }
             
             private void HandleCookiesAfterRequest() {
