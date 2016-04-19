@@ -162,7 +162,9 @@ namespace vApus.StressTest {
             StringTree _parameterizedRequest;
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
-            CookieCollection _cookieCollection;
+            
+            ValueStoreValue _cookieCollection = null;
+            
             CookieDecoder _cookieDecoder;
             StreamReader _streamReader;
             char[] _buffer = new char[1024]; int _count = -1;
@@ -417,10 +419,13 @@ namespace vApus.StressTest {
             }
             
             private void InitCookies() {
-                if (_cookieCollection == null) {
+                string owner = GetParallelRequestThreadOwner();
+                _cookieCollection = ValueStore.GetOrAdd("cookieCollection");
+                if (_cookieCollection.Get(owner).ToString().Length == 0) {
+                    _cookieCollection.Set(owner, new CookieCollection());
+                    
                     _httpWebRequest.CookieContainer = new CookieContainer();
-                    _cookieCollection = new CookieCollection();
-                    _cookieDecoder = new CookieDecoder();
+                    _cookieDecoder                  = new CookieDecoder();
                 }
             }
             
@@ -493,7 +498,7 @@ namespace vApus.StressTest {
                 #endif
                 
                 _httpWebRequest.CookieContainer = new CookieContainer();
-                _httpWebRequest.CookieContainer.Add(_cookieCollection);
+                _httpWebRequest.CookieContainer.Add(_cookieCollection.Get&lt;CookieCollection&gt;(GetParallelRequestThreadOwner()));
             }
             
             private void HandleCookiesAfterRequest() {
@@ -512,12 +517,13 @@ namespace vApus.StressTest {
                     }
                 }
                 // Copy the cached cookies that are not yet in the collection, the check happens on the name of the cookie.
-                foreach (Cookie cookie in _cookieCollection) {
+                string owner = GetParallelRequestThreadOwner();
+                foreach (Cookie cookie in _cookieCollection.Get&lt;CookieCollection&gt;(owner)) {
                     if (GetCookieIndex(cookie, newCookieCollection) == -1) {
                         newCookieCollection.Add(cookie);
                     }
                 }
-                _cookieCollection = newCookieCollection;
+                _cookieCollection.Set(owner, newCookieCollection);
             }
             
             private int GetCookieIndex(Cookie cookie, CookieCollection cookieCollection) {
