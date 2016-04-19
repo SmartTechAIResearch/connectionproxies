@@ -436,7 +436,7 @@ namespace vApus.StressTest {
                     string postData = _parameterizedRequest[(int)SyntaxItem.PostDataHex].Value;
                     if(postData.Length != 0) {
                         byte[] postDataBytes = HexToBytes(postData);
-                        _httpWebRequest.ContentLength = postData.Length;
+                        _httpWebRequest.ContentLength = postDataBytes.Length;
                         _httpWebRequest.ContentType   = _parameterizedRequest[(int)SyntaxItem.ContentType].Value;
                         using (Stream postStream = _httpWebRequest.GetRequestStream()) {
                             postStream.Write(postDataBytes, 0, postDataBytes.Length);
@@ -455,7 +455,7 @@ namespace vApus.StressTest {
                             }
                         */
                         
-                        _httpWebRequest.ContentLength = postData.Length;
+                        _httpWebRequest.ContentLength = System.Text.Encoding.UTF8.GetByteCount(postData);
                         _httpWebRequest.ContentType   = _parameterizedRequest[(int)SyntaxItem.ContentType].Value;
                         using (Stream postStream = _httpWebRequest.GetRequestStream()) {
                             using (StreamWriter postStreamWriter = new StreamWriter(postStream)) {
