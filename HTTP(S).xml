@@ -486,7 +486,7 @@ namespace vApus.StressTest {
                 }
                 
                 if(domain.Contains(":")) domain = domain.Split(':')[0];
-                                
+                
                 foreach (Cookie cookie in cookieCollection) {
                     cookie.Domain = domain;
                 }
@@ -616,6 +616,12 @@ namespace vApus.StressTest {
                 owner = Thread.CurrentThread.Name;
             }
             return owner;
+        }
+        private string GetCustomHeader(string headerName){
+            foreach(var kvp in _parameterizedRequest[(int)SyntaxItem.CustomHeaders]){
+                if(kvp[0].Value == headerName) return kvp.CombineValues();
+            }
+            return null;
         }
     #endregion // Free Coding
 } // ConnectionProxy
