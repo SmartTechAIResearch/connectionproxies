@@ -417,7 +417,7 @@ namespace vApus.StressTest {
             _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
             
             #if DEBUGMODE
-                _httpWebRequest.Headers.Add("vApus-User: " + System.Threading.Thread.CurrentThread.Name);
+                _httpWebRequest.Headers.Add("vApus-User: " + GetParallelRequestThreadOwner());
             #endif
         }
         
