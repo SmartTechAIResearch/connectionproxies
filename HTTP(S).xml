@@ -274,12 +274,18 @@ namespace vApus.StressTest {
                         ApplyPostData();
                         _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
                         
-                        meta = "{\"type\":\"HTTP(s)\",\"requestContentLengthInKiB\":" + (Convert.ToDouble(_httpWebRequest.ContentLength) / 1024).ToString().Replace(',', '.') + ",\"responseContentLengthInKiB\":"; //}
+                        double requestContentLengthInKiB = (Convert.ToDouble(_httpWebRequest.ContentLength) / 1024);
+                        if(requestContentLengthInKiB &lt; 0) requestContentLengthInKiB = -1;
+                        
+                        meta = "{\"type\":\"HTTP(s)\",\"requestContentLengthInKiB\":" + requestContentLengthInKiB.ToString().Replace(',', '.') + ",\"responseContentLengthInKiB\":"; //}
                         
                         _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
+                        
+                        double responseContentLengthInKiB = (Convert.ToDouble(_httpWebResponse.ContentLength) / 1024);
+                        if(responseContentLengthInKiB &lt; 0) responseContentLengthInKiB = -1;
                         string encoding = _httpWebResponse.ContentEncoding.ToLower(); //{
                             
-                        meta += (Convert.ToDouble(_httpWebResponse.ContentLength) / 1024).ToString().Replace(',', '.') + ",\"encoding\":\"" + encoding + "\"}";
+                        meta += responseContentLengthInKiB.ToString().Replace(',', '.') + ",\"encoding\":\"" + encoding + "\"}";
                         
                         if (encoding.Contains("gzip")) {
                             _streamReader = new StreamReader(new GZipStream(_httpWebResponse.GetResponseStream(), CompressionMode.Decompress));
