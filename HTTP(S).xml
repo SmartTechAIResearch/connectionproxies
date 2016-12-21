@@ -241,7 +241,7 @@ namespace vApus.StressTest {
             
             public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
-                meta                  = "{\"type\":\"HTTP(s)\",\"requestContentLengthInKiB\":-1,\"responseContentLengthInKiB\":-1,\"encoding\":\"\"}";
+                meta                  = "{\"type\":\"HTTP(s)\",\"requestContentLengthInKiB\":-1,\"responseContentLengthInKiB\":-1,\"encoding\":\"\",\"responseLengthInKiB\":-1}";
                 exception             = null;
                 
                 //
@@ -274,18 +274,18 @@ namespace vApus.StressTest {
                         ApplyPostData();
                         _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
                         
-                        double requestContentLengthInKiB = (Convert.ToDouble(_httpWebRequest.ContentLength) / 1024);
+                        double requestContentLengthInKiB = Convert.ToDouble(_httpWebRequest.ContentLength) / 1024;
                         if(requestContentLengthInKiB &lt; 0) requestContentLengthInKiB = -1;
                         
                         meta = "{\"type\":\"HTTP(s)\",\"requestContentLengthInKiB\":" + requestContentLengthInKiB.ToString().Replace(',', '.') + ",\"responseContentLengthInKiB\":"; //}
                         
                         _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
                         
-                        double responseContentLengthInKiB = (Convert.ToDouble(_httpWebResponse.ContentLength) / 1024);
+                        double responseContentLengthInKiB = Convert.ToDouble(_httpWebResponse.ContentLength) / 1024;
                         if(responseContentLengthInKiB &lt; 0) responseContentLengthInKiB = -1;
-                        string encoding = _httpWebResponse.ContentEncoding.ToLower(); //{
-                            
-                        meta += responseContentLengthInKiB.ToString().Replace(',', '.') + ",\"encoding\":\"" + encoding + "\"}";
+                        string encoding = _httpWebResponse.ContentEncoding.ToLower();
+                        
+                        meta += responseContentLengthInKiB.ToString().Replace(',', '.') + ",\"encoding\":\"" + encoding + "\",\"responseLengthInKiB\":";
                         
                         if (encoding.Contains("gzip")) {
                             _streamReader = new StreamReader(new GZipStream(_httpWebResponse.GetResponseStream(), CompressionMode.Decompress));
@@ -297,6 +297,8 @@ namespace vApus.StressTest {
                             _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), encoding.Length != 0 ?
                             System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
                         }
+                        //{
+                        meta += (_streamReader.BaseStream.Length / 1024) + "}";
                         
                         // EXAMPLE CUSTOM CP (Drupal): DATA EXTRACTION FROM RESPONSE
                         // IMPORTANT: be sure to
