@@ -159,6 +159,8 @@ namespace vApus.StressTest {
             HttpWebRequest _httpWebRequest;
             HttpWebResponse _httpWebResponse;
             
+            string _parallelRequestThreadOwner;
+            
             ValueStoreValue _cookieCollection = null;
             
             CookieDecoder _cookieDecoder;
@@ -239,7 +241,7 @@ namespace vApus.StressTest {
             
             public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
-                meta                  = null;
+                meta                  = "{\"type\":\"HTTP(s)\",\"requestContentLengthInKiB\":-1,\"responseContentLengthInKiB\":-1,\"encoding\":\"\",\"uncompressedTotalResponseLengthInKiB\":-1}";
                 exception             = null;
                 
                 //
@@ -247,6 +249,16 @@ namespace vApus.StressTest {
                 // String Tree is a simple class: it can have either a value (property: string Value) or childs who are also String Trees (e.g. StringTree foo = parameterizedRequest[n] where n is an integer value).
                 // You can get the combined value of the childs using the function CombineValues() (not shallow, returns a string), this uses the child delimiters in the rule set to glue these values together.
                 //
+                
+                // Owner not available in constructor, therefor set here.
+                // This sets the owner name of the simulated user thread.
+                // If the current thread is a 'parallel request thread' it's 'parent thread' owner name is returned.
+                if(_parallelRequestThreadOwner == null){
+                    _parallelRequestThreadOwner = Thread.CurrentThread.GetParent() as string;
+                    if (_parallelRequestThreadOwner == null) {
+                        _parallelRequestThreadOwner = Thread.CurrentThread.Name;
+                    }
+                }
                 
                 sentAt = HighResolutionDateTime.UtcNow;
                 if (_isDisposed) {
@@ -262,56 +274,73 @@ namespace vApus.StressTest {
                         ApplyPostData();
                         _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
                         
-                        if (_httpWebResponse.ContentEncoding.ToLower().Contains("gzip")) {
+                        double requestContentLengthInKiB = Convert.ToDouble(_httpWebRequest.ContentLength) / 1024;
+                        if(requestContentLengthInKiB &lt; 0) requestContentLengthInKiB = -1;
+                        
+                        meta = "{\"type\":\"HTTP(s)\",\"requestContentLengthInKiB\":" + requestContentLengthInKiB.ToString().Replace(',', '.') + ",\"responseContentLengthInKiB\":"; //}
+                        
+                        _httpWebResponse = _httpWebRequest.GetResponse() as HttpWebResponse;
+                        
+                        double responseContentLengthInKiB = Convert.ToDouble(_httpWebResponse.ContentLength) / 1024;
+                        if(responseContentLengthInKiB &lt; 0) responseContentLengthInKiB = -1;
+                        string encoding = _httpWebResponse.ContentEncoding.ToLower();
+                        
+                        meta += responseContentLengthInKiB.ToString().Replace(',', '.') + ",\"encoding\":\"" + encoding + "\",\"uncompressedTotalResponseLengthInKiB\":";
+                        
+                        if (encoding.Contains("gzip")) {
                             _streamReader = new StreamReader(new GZipStream(_httpWebResponse.GetResponseStream(), CompressionMode.Decompress));
                         }
-                        else if(_httpWebResponse.ContentEncoding.ToLower().Contains("deflate")){
+                        else if(encoding.Contains("deflate")){
                             _streamReader = new StreamReader(new DeflateStream(_httpWebResponse.GetResponseStream(), CompressionMode.Decompress));
                         }
                         else {
-                            _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), _httpWebResponse.ContentEncoding.Length != 0 ?
-                            System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
+                            _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), encoding.Length != 0 ?
+                            System.Text.Encoding.GetEncoding(encoding) : System.Text.Encoding.GetEncoding(1252));
                         }
+                        
+                        long length = 0L;
                         
                         // EXAMPLE CUSTOM CP (Drupal): DATA EXTRACTION FROM RESPONSE
                         // IMPORTANT: be sure to
-                        //      1) always execute DownloadResponse()
+                        //      1) always execute DownloadResponse(out length)
                         //      2) execute it only once in every specific case
                         /*
                             string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
                             string method = _parameterizedRequest[(int)SyntaxItem.RequestMethod].Value;
                             string getData = _parameterizedRequest[(int)SyntaxItem.GetData].CombineValues();
                             string location = _httpWebResponse.GetResponseHeader("Location");
-                            string owner = GetParallelRequestThreadOwner();
                             
                             if (relUrl == "/node/add/article" &amp;&amp; method == "GET") {
-                                string response = DownloadResponse(false); // Get full response in memory
+                                string response = DownloadResponse(out length, false); // Get full response in memory
                                 string form_build_id = GetStringBetween(response, "&lt;input type=\"hidden\" name=\"form_build_id\" value=\"", "\" /&gt;");
                                 string form_token = GetStringBetween(response, "&lt;input type=\"hidden\" name=\"form_token\" value=\"", "\" /&gt;");
                                 
-                                _form_build_id.Set(owner, form_build_id);
-                                _form_token.Set(owner, form_token);
+                                _form_build_id.Set(_parallelRequestThreadOwner, form_build_id);
+                                _form_token.Set(_parallelRequestThreadOwner, form_token);
                                 
                                 #if DEBUGMODE
-                                    EventPanel.AddEvent("form_build_id (ValueStore): " + _form_build_id.Get&lt;string&gt;(owner));
-                                    EventPanel.AddEvent("form_token (ValueStore): " + _form_token.Get&lt;string&gt;(owner));
+                                    EventPanel.AddEvent("form_build_id (ValueStore): " + _form_build_id.Get&lt;string&gt;(_parallelRequestThreadOwner));
+                                    EventPanel.AddEvent("form_token (ValueStore): " + _form_token.Get&lt;string&gt;(_parallelRequestThreadOwner));
                                 #endif
                             }
                             else {
-                                DownloadResponse(); // Discard response while it gets downloaded
+                                DownloadResponse(out length); // Discard response while it gets downloaded
                             }
                             
                             if (relUrl == "/node/add/article" &amp;&amp; !string.IsNullOrEmpty(location)) {
-                                _redirect_node.Set(owner, location.Substring(location.IndexOf("/blog/", StringComparison.InvariantCultureIgnoreCase) + "/blog/".Length));
+                                _redirect_node.Set(_parallelRequestThreadOwner, location.Substring(location.IndexOf("/blog/", StringComparison.InvariantCultureIgnoreCase) + "/blog/".Length));
                                 
                                 #if DEBUGMODE
-                                    EventPanel.AddEvent("redirect_node: " + _redirect_node.Get&lt;string&gt;(owner));
+                                    EventPanel.AddEvent("redirect_node: " + _redirect_node.Get&lt;string&gt;(_parallelRequestThreadOwner));
                                 #endif
                             }
                         */
                         
-                        // Remove this instance of DownloadResponse() if already used above this line for data extraction
-                        DownloadResponse();
+                        // Remove this instance of DownloadResponse(out length) if already used above this line for data extraction
+                        DownloadResponse(out length);
+                        
+                        //{
+                        meta += ((double)length / 1024) + "}";
                         
                         HandleCookiesAfterRequest();
                     }
@@ -384,7 +413,7 @@ namespace vApus.StressTest {
                 // Here you can also change getData if needed
                 /*
                     if (relUrl == "/blog/{redirect_node}") {
-                    relUrl = relUrl.Replace("{redirect_node}", _redirect_node.Get&lt;string&gt;(GetParallelRequestThreadOwner()));
+                    relUrl = relUrl.Replace("{redirect_node}", _redirect_node.Get&lt;string&gt;(_parallelRequestThreadOwner));
                 }
             */
             
@@ -417,15 +446,14 @@ namespace vApus.StressTest {
             _httpWebRequest.ServicePoint.ConnectionLimit = (this.GetParent() as ConnectionProxyPool).PoolSize;
             
             #if DEBUGMODE
-                _httpWebRequest.Headers.Add("vApus-User: " + GetParallelRequestThreadOwner());
+                _httpWebRequest.Headers.Add("vApus-User: " + _parallelRequestThreadOwner);
             #endif
         }
         
         private void InitCookies() {
-            string owner = GetParallelRequestThreadOwner();
             _cookieCollection = ValueStore.GetOrAdd("cookieCollection");
-            if (_cookieCollection.Get(owner).ToString().Length == 0) {
-                _cookieCollection.Set(owner, new CookieCollection());
+            if (_cookieCollection.Get(_parallelRequestThreadOwner).ToString().Length == 0) {
+                _cookieCollection.Set(_parallelRequestThreadOwner, new CookieCollection());
                 
                 _httpWebRequest.CookieContainer = new CookieContainer();
                 _cookieDecoder                  = new CookieDecoder();
@@ -454,9 +482,8 @@ namespace vApus.StressTest {
                     // EXAMPLE CUSTOM CP (Drupal): CHANGE POSTDATA
                     /*
                         if (relUrl == "/node/add/article") {
-                            string owner = GetParallelRequestThreadOwner();
-                            string form_build_id = _form_build_id.Get&lt;string&gt;(owner);
-                            string form_token = _form_token.Get&lt;string&gt;(owner);
+                            string form_build_id = _form_build_id.Get&lt;string&gt;(_parallelRequestThreadOwner);
+                            string form_token = _form_token.Get&lt;string&gt;(_parallelRequestThreadOwner);
                             postData = postData.Replace("{form_build_id}", form_build_id).Replace("{form_token}", form_token);
                         }
                     */
@@ -474,7 +501,7 @@ namespace vApus.StressTest {
         }
         
         private void HandleCookiesBeforeRequest() {
-            var cookieCollection = _cookieCollection.Get&lt;CookieCollection&gt;(GetParallelRequestThreadOwner());
+            var cookieCollection = _cookieCollection.Get&lt;CookieCollection&gt;(_parallelRequestThreadOwner);
             #if USECUSTOMCOOKIEPARSER
                 // Domain for the cookies should be determined here.
                 string domain = _httpWebRequest.RequestUri.GetLeftPart(UriPartial.Authority);
@@ -512,13 +539,12 @@ namespace vApus.StressTest {
                 }
             }
             // Copy the cached cookies that are not yet in the collection, the check happens on the name of the cookie.
-            string owner = GetParallelRequestThreadOwner();
-            foreach (Cookie cookie in _cookieCollection.Get&lt;CookieCollection&gt;(owner)) {
+            foreach (Cookie cookie in _cookieCollection.Get&lt;CookieCollection&gt;(_parallelRequestThreadOwner)) {
                 if (GetCookieIndex(cookie, newCookieCollection) == -1) {
                     newCookieCollection.Add(cookie);
                 }
             }
-            _cookieCollection.Set(owner, newCookieCollection);
+            _cookieCollection.Set(_parallelRequestThreadOwner, newCookieCollection);
         }
         
         private int GetCookieIndex(Cookie cookie, CookieCollection cookieCollection) {
@@ -587,36 +613,27 @@ namespace vApus.StressTest {
             return arr;
         }
         
-        // Downloads the full response and returns the page.
+        // Downloads the full response and returns the page. The length in bytes is returned in the out param.
         // If discard is set (default), the response will be buffered in small blocks and discarded.
         // If we want to keep the full response for parsing, set discard = false.
-        private string DownloadResponse(bool discard = true) {
+        private string DownloadResponse(out long length, bool discard = true) {
+            string response = string.Empty;
+            length = 0L;
             if (discard) {
                 do {
                     _count = _streamReader.Read(_buffer, 0, 1024);
+                    length += _count;
                 } while (_count != 0);
             }
             else {
-                return _streamReader.ReadToEnd();
+                response = _streamReader.ReadToEnd();
+                length   = System.Text.Encoding.UTF8.GetByteCount(response);
             }
             
-            return string.Empty;
+            return response;
         }
         
-        // Returns false if the current thread is a 'parallel request thread'.
-        private bool IsSimulatedUserThread(){
-            return Thread.CurrentThread.GetParent() == null;
-        }
         
-        // This function returns the owner name of the simulated user thread.
-        // If the current thread is a 'parallel request thread' it's 'parent thread' owner name is returned.
-        private string GetParallelRequestThreadOwner(){
-            string owner = Thread.CurrentThread.GetParent() as string;
-            if (owner == null) {
-                owner = Thread.CurrentThread.Name;
-            }
-            return owner;
-        }
         private string GetCustomHeader(string headerName){
             foreach(var kvp in _parameterizedRequest[(int)SyntaxItem.CustomHeaders]){
                 if(kvp[0].Value == headerName) return kvp.CombineValues();
