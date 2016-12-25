@@ -241,7 +241,7 @@ namespace vApus.StressTest {
             
             public void SendAndReceive(StringTree parameterizedRequest, out DateTime sentAt, out TimeSpan timeToLastByte, out string meta, out Exception exception) {
                 _parameterizedRequest = parameterizedRequest;
-                meta                  = "{\"type\":\"HTTP(s)\",\"requestContentLengthInKiB\":-1,\"responseContentLengthInKiB\":-1,\"encoding\":\"\",\"responseLengthInKiB\":-1}";
+                meta                  = "{\"type\":\"HTTP(s)\",\"requestContentLengthInKiB\":-1,\"responseContentLengthInKiB\":-1,\"encoding\":\"\",\"uncompressedTotalResponseLengthInKiB\":-1}";
                 exception             = null;
                 
                 //
@@ -285,7 +285,7 @@ namespace vApus.StressTest {
                         if(responseContentLengthInKiB &lt; 0) responseContentLengthInKiB = -1;
                         string encoding = _httpWebResponse.ContentEncoding.ToLower();
                         
-                        meta += responseContentLengthInKiB.ToString().Replace(',', '.') + ",\"encoding\":\"" + encoding + "\",\"responseLengthInKiB\":";
+                        meta += responseContentLengthInKiB.ToString().Replace(',', '.') + ",\"encoding\":\"" + encoding + "\",\"uncompressedTotalResponseLengthInKiB\":";
                         
                         if (encoding.Contains("gzip")) {
                             _streamReader = new StreamReader(new GZipStream(_httpWebResponse.GetResponseStream(), CompressionMode.Decompress));
@@ -295,14 +295,14 @@ namespace vApus.StressTest {
                         }
                         else {
                             _streamReader = new StreamReader(_httpWebResponse.GetResponseStream(), encoding.Length != 0 ?
-                            System.Text.Encoding.GetEncoding(_httpWebResponse.ContentEncoding) : System.Text.Encoding.GetEncoding(1252));
+                            System.Text.Encoding.GetEncoding(encoding) : System.Text.Encoding.GetEncoding(1252));
                         }
-                        //{
-                        meta += (_streamReader.BaseStream.Length / 1024) + "}";
+                        
+                        long length = 0L;
                         
                         // EXAMPLE CUSTOM CP (Drupal): DATA EXTRACTION FROM RESPONSE
                         // IMPORTANT: be sure to
-                        //      1) always execute DownloadResponse()
+                        //      1) always execute DownloadResponse(out length)
                         //      2) execute it only once in every specific case
                         /*
                             string relUrl = _parameterizedRequest[(int)SyntaxItem.RelativeUrl].Value;
@@ -311,7 +311,7 @@ namespace vApus.StressTest {
                             string location = _httpWebResponse.GetResponseHeader("Location");
                             
                             if (relUrl == "/node/add/article" &amp;&amp; method == "GET") {
-                                string response = DownloadResponse(false); // Get full response in memory
+                                string response = DownloadResponse(out length, false); // Get full response in memory
                                 string form_build_id = GetStringBetween(response, "&lt;input type=\"hidden\" name=\"form_build_id\" value=\"", "\" /&gt;");
                                 string form_token = GetStringBetween(response, "&lt;input type=\"hidden\" name=\"form_token\" value=\"", "\" /&gt;");
                                 
@@ -324,7 +324,7 @@ namespace vApus.StressTest {
                                 #endif
                             }
                             else {
-                                DownloadResponse(); // Discard response while it gets downloaded
+                                DownloadResponse(out length); // Discard response while it gets downloaded
                             }
                             
                             if (relUrl == "/node/add/article" &amp;&amp; !string.IsNullOrEmpty(location)) {
@@ -336,8 +336,11 @@ namespace vApus.StressTest {
                             }
                         */
                         
-                        // Remove this instance of DownloadResponse() if already used above this line for data extraction
-                        DownloadResponse();
+                        // Remove this instance of DownloadResponse(out length) if already used above this line for data extraction
+                        DownloadResponse(out length);
+                        
+                        //{
+                        meta += ((double)length / 1024) + "}";
                         
                         HandleCookiesAfterRequest();
                     }
@@ -610,20 +613,24 @@ namespace vApus.StressTest {
             return arr;
         }
         
-        // Downloads the full response and returns the page.
+        // Downloads the full response and returns the page. The length in bytes is returned in the out param.
         // If discard is set (default), the response will be buffered in small blocks and discarded.
         // If we want to keep the full response for parsing, set discard = false.
-        private string DownloadResponse(bool discard = true) {
+        private string DownloadResponse(out long length, bool discard = true) {
+            string response = string.Empty;
+            length = 0L;
             if (discard) {
                 do {
                     _count = _streamReader.Read(_buffer, 0, 1024);
+                    length += _count;
                 } while (_count != 0);
             }
             else {
-                return _streamReader.ReadToEnd();
+                response = _streamReader.ReadToEnd();
+                length   = System.Text.Encoding.UTF8.GetByteCount(response);
             }
             
-            return string.Empty;
+            return response;
         }
         
         
