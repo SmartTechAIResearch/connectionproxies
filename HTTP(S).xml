@@ -340,7 +340,7 @@ namespace vApus.StressTest {
                         DownloadResponse(out length);
                         
                         //{
-                        meta += ((double)length / 1024).ToString.Replace(',', '.') + "}";
+                        meta += ((double)length / 1024).ToString().Replace(',', '.') + "}";
                         
                         HandleCookiesAfterRequest();
                     }
